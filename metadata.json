@@ -1,0 +1,8 @@
+{
+  "name": "Website Resmi Kelas 9K B.ONE",
+  "description": "Album Kelas & Sistem Manajemen Kelas 9K B.ONE yang memiliki desain premium, modern, elegan, dan cepat.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

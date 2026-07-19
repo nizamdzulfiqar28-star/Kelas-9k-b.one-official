@@ -1,0 +1,34 @@
+{
+  "collections": {
+    "users": {
+      "rules": {
+        "read": "true",
+        "write": "request.auth != null && request.auth.uid == id"
+      }
+    },
+    "achievements": {
+      "rules": {
+        "read": "true",
+        "write": "request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['OWNER', 'ADMIN']"
+      }
+    },
+    "duty_roster": {
+      "rules": {
+        "read": "true",
+        "write": "request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['OWNER', 'ADMIN']"
+      }
+    },
+    "class_schedule": {
+      "rules": {
+        "read": "true",
+        "write": "request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['OWNER', 'ADMIN']"
+      }
+    },
+    "documentations": {
+      "rules": {
+        "read": "true",
+        "write": "request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['OWNER', 'ADMIN']"
+      }
+    }
+  }
+}
