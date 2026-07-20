@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { Image, Trophy, Calendar, Users, Info, CalendarDays, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
+import { logoBase64 } from '../logoBase64';
 
 const quickMenu = [
   { title: 'Dokumentasi', icon: Image, color: 'text-pink-400', bg: 'bg-pink-400/10', to: '/dokumentasi' },
@@ -24,7 +25,7 @@ export default function HomePage() {
           transition={{ duration: 0.8, type: "spring", bounce: 0.5 }}
           className="w-32 h-32 mb-10 rounded-full flex items-center justify-center border-2 border-[#d4af37]/50 shadow-[0_0_20px_rgba(212,175,55,0.4)] overflow-hidden bg-[#0c0c12]"
         >
-          <img src="/logo.png" alt="9K Logo" className="w-full h-full object-cover scale-[1.35]" />
+          <img src={logoBase64} alt="9K Logo" className="w-full h-full object-cover scale-[1.35]" />
         </motion.div>
 
         <motion.div

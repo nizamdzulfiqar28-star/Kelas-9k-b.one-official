@@ -24,6 +24,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useDataStore } from './store/dataStore';
 import ScrollToTop from './components/layout/ScrollToTop';
 import { Volume2 } from 'lucide-react';
+import { logoBase64 } from './logoBase64';
 
 // Placeholder components for routes we haven't built yet
 const PlaceholderPage = ({ title }: { title: string }) => (
@@ -43,12 +44,29 @@ const DashboardPlaceholder = ({ title }: { title: string }) => (
   </div>
 );
 
-// Create global Audio instance outside React lifecycle for instant preloading
-const globalAudio = typeof window !== 'undefined' ? new Audio('/bg-music.mp3') : null;
+// Create global Audio instance outside React lifecycle with multi-source fallback
+const AUDIO_URLS = [
+  '/bg-music.mp3',
+  'https://sympathetic-lime-e1ftljwy.edgeone.dev/SpotiDown.App%20-%20Ethereal%20-%20mikeeysmind.mp3'
+];
+
+let currentAudioIndex = 0;
+const globalAudio = typeof window !== 'undefined' ? new Audio(AUDIO_URLS[0]) : null;
+
 if (globalAudio) {
   globalAudio.loop = true;
   globalAudio.volume = 0.4; // Pleasant background volume level
   globalAudio.preload = 'auto';
+
+  // If local file fails (e.g. not committed/not found on Vercel), fallback immediately to CDN!
+  globalAudio.addEventListener('error', () => {
+    if (currentAudioIndex < AUDIO_URLS.length - 1) {
+      currentAudioIndex++;
+      console.log(`Audio stream error. Falling back to source: ${AUDIO_URLS[currentAudioIndex]}`);
+      globalAudio.src = AUDIO_URLS[currentAudioIndex];
+      globalAudio.load();
+    }
+  });
 }
 
 export default function App() {
@@ -70,87 +88,24 @@ export default function App() {
     let active = true;
 
     const runPreload = async () => {
-      let logoDone = false;
-      let audioProgressPercent = 0;
-
-      // Logo Image Preloader
-      const preloadLogo = new Promise<void>((resolve) => {
-        const img = new Image();
-        img.src = '/logo.png';
-        img.onload = () => {
-          logoDone = true;
-          if (active) {
-            setProgress((prev) => {
-              const audioContribution = prev > 15 ? prev - 15 : 0;
-              return Math.min(Math.round(15 + audioContribution), 100);
-            });
-          }
-          resolve();
-        };
-        img.onerror = () => {
-          logoDone = true;
-          resolve();
-        };
-      });
-
-      // Audio Fetch Preloader with progress tracking
-      const preloadAudio = async () => {
-        try {
-          const response = await fetch('/bg-music.mp3');
-          if (!response.ok) throw new Error('Response error');
-          
-          const contentLength = response.headers.get('content-length');
-          const totalBytes = contentLength ? parseInt(contentLength, 10) : 0;
-
-          if (totalBytes === 0) {
-            throw new Error('Zero total bytes');
-          }
-
-          const reader = response.body?.getReader();
-          if (!reader) throw new Error('No reader');
-
-          let receivedBytes = 0;
-          while (active) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            receivedBytes += value.length;
-            audioProgressPercent = (receivedBytes / totalBytes) * 85;
-            
-            if (active) {
-              setProgress(() => {
-                const logoContribution = logoDone ? 15 : 0;
-                return Math.min(Math.round(logoContribution + audioProgressPercent), 99);
-              });
-            }
-          }
-        } catch (err) {
-          console.warn('Real audio stream failed or blocked, using smooth simulation fallback', err);
-          // Simulate audio progress smoothly
-          let simulatedAudio = 0;
-          while (active && simulatedAudio < 85) {
-            await new Promise((r) => setTimeout(r, 60));
-            simulatedAudio += Math.random() * 5 + 2;
-            audioProgressPercent = Math.min(simulatedAudio, 85);
-            if (active) {
-              setProgress(() => {
-                const logoContribution = logoDone ? 15 : 0;
-                return Math.min(Math.round(logoContribution + audioProgressPercent), 99);
-              });
-            }
-          }
-        }
-      };
-
-      // Run logo loading and audio stream download concurrently
-      await Promise.all([preloadLogo, preloadAudio()]);
+      // Create a super fast, buttery-smooth simulated progress bar.
+      // Since the logo is fully base64-embedded (0ms download) and the audio plays/streams instantly on click,
+      // we can simulate loading progress in ~1.5s to provide a highly polished, responsive intro!
+      let currentProgress = 0;
+      while (active && currentProgress < 100) {
+        const delay = Math.random() * 50 + 30; // 30-80ms
+        await new Promise((r) => setTimeout(r, delay));
+        if (!active) return;
+        currentProgress += Math.floor(Math.random() * 8) + 4; // 4-12% increase
+        if (currentProgress > 100) currentProgress = 100;
+        setProgress(currentProgress);
+      }
 
       if (active) {
         setProgress(100);
-        // Add a micro delay for visual satisfaction of reaching 100%
         setTimeout(() => {
           if (active) setReadyToEnter(true);
-        }, 400);
+        }, 200);
       }
     };
 
@@ -266,7 +221,7 @@ export default function App() {
                 transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
                 className="w-24 h-24 rounded-full border border-[#d4af37]/30 overflow-hidden flex items-center justify-center bg-[#0c0c12] relative z-10"
               >
-                <img src="/logo.png" alt="9K Logo" className="w-full h-full object-cover scale-[1.35]" />
+                <img src={logoBase64} alt="9K Logo" className="w-full h-full object-cover scale-[1.35]" />
               </motion.div>
 
               {/* Text */}
