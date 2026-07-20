@@ -3,9 +3,10 @@ import { useDataStore } from '@/store/dataStore';
 import { motion } from 'motion/react';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { schedule as defaultSchedule, pickets as defaultPickets } from '@/data/mockData';
 
 const getFilledSubjects = (subjects: string[]) => {
-  const result = [...subjects];
+  const result = [...(subjects || [])];
   while (result.length > 0 && (!result[result.length - 1] || result[result.length - 1].trim() === '')) {
     result.pop();
   }
@@ -14,7 +15,10 @@ const getFilledSubjects = (subjects: string[]) => {
 
 export default function JadwalPage() {
   const [activeTab, setActiveTab] = useState<'pelajaran' | 'piket'>('pelajaran');
-  const { schedules: schedule, pickets } = useDataStore();
+  const { schedules, pickets } = useDataStore();
+
+  const activeSchedules = schedules && schedules.length > 0 ? schedules : defaultSchedule;
+  const activePickets = pickets && pickets.length > 0 ? pickets : defaultPickets;
 
   return (
     <div className="container mx-auto px-6 py-12">
@@ -54,7 +58,7 @@ export default function JadwalPage() {
           exit={{ opacity: 0, y: -20 }}
           className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
         >
-          {schedule.map((day, i) => (
+          {activeSchedules.map((day, i) => (
             <motion.div
               key={day.day}
               initial={{ opacity: 0, y: 30 }}
@@ -91,7 +95,7 @@ export default function JadwalPage() {
           exit={{ opacity: 0, y: -20 }}
           className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
         >
-          {pickets.map((day, i) => (
+          {activePickets.map((day, i) => (
             <motion.div
               key={day.day}
               initial={{ opacity: 0, y: 30 }}

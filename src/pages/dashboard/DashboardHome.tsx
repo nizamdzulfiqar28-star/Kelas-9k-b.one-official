@@ -10,7 +10,7 @@ import { students } from '@/data/mockData';
 export default function DashboardHome() {
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState<string | null>(null);
-  const { documentations, achievements, schedules, visitorCount, activities, clearActivities } = useDataStore();
+  const { documentations = [], achievements = [], schedules = [], visitorCount = 0, activities = [], clearActivities } = useDataStore();
   const { role } = useAuthStore();
 
   useEffect(() => {
@@ -48,11 +48,11 @@ export default function DashboardHome() {
   }
 
   const stats = [
-    { name: 'Total Siswa', value: students.length.toString(), icon: Users, color: 'text-blue-400', bg: 'bg-blue-400/10' },
-    { name: 'Dokumentasi', value: documentations.length.toString(), icon: Image, color: 'text-pink-400', bg: 'bg-pink-400/10' },
-    { name: 'Prestasi', value: achievements.length.toString(), icon: Trophy, color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
-    { name: 'Jadwal Aktif', value: schedules.length.toString(), icon: Calendar, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
-    { name: 'Pengunjung Website', value: visitorCount.toString(), icon: Eye, color: 'text-[#d4af37]', bg: 'bg-[#d4af37]/10' },
+    { name: 'Total Siswa', value: (students || []).length.toString(), icon: Users, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+    { name: 'Dokumentasi', value: (documentations || []).length.toString(), icon: Image, color: 'text-pink-400', bg: 'bg-pink-400/10' },
+    { name: 'Prestasi', value: (achievements || []).length.toString(), icon: Trophy, color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
+    { name: 'Jadwal Aktif', value: (schedules || []).length.toString(), icon: Calendar, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
+    { name: 'Pengunjung Website', value: (visitorCount || 0).toString(), icon: Eye, color: 'text-[#d4af37]', bg: 'bg-[#d4af37]/10' },
   ];
 
   if (loading) {

@@ -15,15 +15,16 @@ const getFilledSubjects = (subjects: string[]) => {
 
 export default function DashboardJadwal() {
   const { schedules, updateSchedule } = useDataStore();
+  const activeSchedules = schedules && schedules.length > 0 ? schedules : [];
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDay, setEditingDay] = useState<string | null>(null);
   
   const [formData, setFormData] = useState<string[]>([]);
 
-  const handleOpenModal = (daySchedule: typeof schedules[0]) => {
+  const handleOpenModal = (daySchedule: any) => {
     setEditingDay(daySchedule.day);
     // Pad to exactly 10 hours so they can edit up to 10 hours optionally
-    const subjects = [...daySchedule.subjects];
+    const subjects = [...(daySchedule.subjects || [])];
     while (subjects.length < 10) {
       subjects.push('');
     }
@@ -55,7 +56,7 @@ export default function DashboardJadwal() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {schedules.map((daySchedule) => (
+        {activeSchedules.map((daySchedule) => (
           <div key={daySchedule.day} className="bg-slate-900/50 rounded-2xl border border-white/10 overflow-hidden flex flex-col">
             <div className="p-4 border-b border-white/10 bg-white/5 flex justify-between items-center">
               <h3 className="font-bold text-indigo-300">{daySchedule.day}</h3>

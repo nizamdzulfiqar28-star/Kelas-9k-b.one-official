@@ -280,6 +280,30 @@ export const useDataStore = create<DataState>()(
     }),
     {
       name: 'class-data-storage-v3',
+      merge: (persistedState: any, currentState) => {
+        const merged = { ...currentState, ...(persistedState as any) };
+        
+        // Ensure critical fields are never undefined or completely empty if defaults exist
+        if (!merged.schedules || merged.schedules.length === 0) {
+          merged.schedules = currentState.schedules;
+        }
+        if (!merged.pickets || merged.pickets.length === 0) {
+          merged.pickets = currentState.pickets;
+        }
+        if (!merged.organization || merged.organization.length === 0) {
+          merged.organization = currentState.organization;
+        }
+        if (!merged.users || merged.users.length === 0) {
+          merged.users = currentState.users;
+        }
+        if (!merged.documentations) {
+          merged.documentations = currentState.documentations;
+        }
+        if (!merged.achievements) {
+          merged.achievements = currentState.achievements;
+        }
+        return merged;
+      }
     }
   )
 );
