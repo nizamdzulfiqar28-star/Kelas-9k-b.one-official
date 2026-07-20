@@ -68,7 +68,7 @@ export default function DashboardPiket() {
                   </li>
                 ))}
                 {picketDay.students.length === 0 && (
-                  <li className="text-slate-500 italic text-sm text-center py-2">Belum ada petugas piket</li>
+                  <li className="text-slate-500 italic text-sm text-center py-2">jadwal piket belum dibentuk</li>
                 )}
               </ul>
             </div>

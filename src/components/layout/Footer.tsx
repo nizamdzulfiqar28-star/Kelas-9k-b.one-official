@@ -93,6 +93,13 @@ export default function Footer() {
           </>
         )}
 
+        {/* Developer Contact Notice */}
+        <div className="text-center mb-10 px-4 py-4 bg-slate-900/40 border border-white/5 rounded-2xl max-w-lg mx-auto">
+          <p className="text-xs text-slate-400 tracking-wide font-sans leading-relaxed">
+            kalo ada bug / fitur yang ga berfungsi silakan hubungi developernya yaitu <span className="text-[#CBA358] font-bold">nizam dzr.dev</span>
+          </p>
+        </div>
+
         {/* Bottom Logo */}
         <div className="text-center pb-8 pt-12 border-t border-white/5 relative">
           <h1 className="text-5xl md:text-6xl font-heading text-[#CBA358] mb-4 tracking-widest">IX K</h1>

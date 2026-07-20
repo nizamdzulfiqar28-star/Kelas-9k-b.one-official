@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useDataStore, OrgMember } from '@/store/dataStore';
 import { Button } from '@/components/ui/button';
-import { Edit, X, Upload, Users, Save } from 'lucide-react';
+import { Edit, X, Upload, Users, Save, Plus, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function DashboardStruktur() {
-  const { organization, updateOrgMember } = useDataStore();
+  const { organization, updateOrgMember, addOrgMember, deleteOrgMember } = useDataStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
   const [editingMember, setEditingMember] = useState<OrgMember | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   
@@ -18,12 +19,25 @@ export default function DashboardStruktur() {
 
   const handleOpenModal = (item: OrgMember) => {
     setEditingMember(item);
+    setIsAdding(false);
     setFormData({
       role: item.role,
       name: item.name,
       url: item.url || ''
     });
     setPreviewImage(item.url || null);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenAddModal = () => {
+    setEditingMember(null);
+    setIsAdding(true);
+    setFormData({
+      role: '',
+      name: '',
+      url: ''
+    });
+    setPreviewImage(null);
     setIsModalOpen(true);
   };
 
@@ -42,23 +56,38 @@ export default function DashboardStruktur() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingMember) return;
-
-    updateOrgMember(editingMember.id, {
-      role: formData.role,
-      name: formData.name,
-      url: formData.url
-    });
+    
+    if (isAdding) {
+      addOrgMember({
+        role: formData.role,
+        name: formData.name,
+        url: formData.url
+      });
+    } else {
+      if (!editingMember) return;
+      updateOrgMember(editingMember.id, {
+        role: formData.role,
+        name: formData.name,
+        url: formData.url
+      });
+    }
+    
     setIsModalOpen(false);
   };
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h2 className="text-2xl font-heading font-bold text-white">Kelola Struktur Organisasi</h2>
-          <p className="text-sm text-slate-400">Sunting informasi pengurus inti kelas (ketua, wakil, sekretaris, bendahara).</p>
+          <p className="text-sm text-slate-400">Sunting informasi pengurus kelas (pimpinan, sekretaris, bendahara, seksi-seksi, dsb).</p>
         </div>
+        <Button
+          onClick={handleOpenAddModal}
+          className="bg-indigo-600 hover:bg-indigo-500 text-white gap-2 rounded-xl px-4 py-2.5 shadow-lg shadow-indigo-600/20"
+        >
+          <Plus className="w-4 h-4" /> Tambah Jabatan Baru
+        </Button>
       </div>
 
       <div className="bg-slate-900/50 rounded-2xl border border-white/10 overflow-hidden">
@@ -89,16 +118,30 @@ export default function DashboardStruktur() {
                       {item.role}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-slate-300 font-medium">{item.name}</td>
+                  <td className="px-6 py-4 text-slate-300 font-medium">{item.name || <span className="text-slate-500 italic text-xs">Belum ditentukan</span>}</td>
                   <td className="px-6 py-4 text-right">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleOpenModal(item)}
-                      className="gap-1 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
-                    >
-                      <Edit className="w-4 h-4" /> Edit
-                    </Button>
+                    <div className="flex items-center justify-end gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleOpenModal(item)}
+                        className="gap-1 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
+                      >
+                        <Edit className="w-4 h-4" /> Edit
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => {
+                          if (confirm(`Apakah Anda yakin ingin menghapus jabatan "${item.role}"?`)) {
+                            deleteOrgMember(item.id);
+                          }
+                        }}
+                        className="gap-1 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                      >
+                        <Trash2 className="w-4 h-4" /> Hapus
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -124,7 +167,7 @@ export default function DashboardStruktur() {
             >
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-bold text-white">
-                  Edit Anggota Organisasi
+                  {isAdding ? "Tambah Jabatan Baru" : "Edit Anggota Organisasi"}
                 </h3>
                 <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-white">
                   <X className="w-5 h-5" />

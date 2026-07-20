@@ -5,6 +5,14 @@ import { Edit, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 
+const getFilledSubjects = (subjects: string[]) => {
+  const result = [...subjects];
+  while (result.length > 0 && (!result[result.length - 1] || result[result.length - 1].trim() === '')) {
+    result.pop();
+  }
+  return result;
+};
+
 export default function DashboardJadwal() {
   const { schedules, updateSchedule } = useDataStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -14,7 +22,12 @@ export default function DashboardJadwal() {
 
   const handleOpenModal = (daySchedule: typeof schedules[0]) => {
     setEditingDay(daySchedule.day);
-    setFormData([...daySchedule.subjects]);
+    // Pad to exactly 10 hours so they can edit up to 10 hours optionally
+    const subjects = [...daySchedule.subjects];
+    while (subjects.length < 10) {
+      subjects.push('');
+    }
+    setFormData(subjects);
     setIsModalOpen(true);
   };
 
@@ -52,7 +65,7 @@ export default function DashboardJadwal() {
             </div>
             <div className="p-0 flex-1">
               <ul className="divide-y divide-white/5">
-                {daySchedule.subjects.map((subject, idx) => (
+                {getFilledSubjects(daySchedule.subjects).map((subject, idx) => (
                   <li key={idx} className={cn(
                     "px-4 py-2 flex items-center justify-between text-sm",
                     subject === 'Istirahat' ? "bg-slate-900/50 text-slate-500 font-medium italic" : "text-slate-300"
@@ -96,7 +109,7 @@ export default function DashboardJadwal() {
                     <div key={idx} className="flex items-center gap-4">
                       <span className="text-sm font-medium text-slate-400 w-16">Jam {idx + 1}</span>
                       <input 
-                        type="text" required
+                        type="text"
                         value={subject} 
                         onChange={e => handleSubjectChange(idx, e.target.value)}
                         className="flex-1 bg-black/20 border border-white/10 rounded-xl px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"

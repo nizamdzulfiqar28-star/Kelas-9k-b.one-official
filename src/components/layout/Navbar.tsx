@@ -21,6 +21,11 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
+    // Force remove light mode class if any exists
+    document.body.classList.remove('light');
+  }, []);
+
+  useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };
@@ -51,7 +56,7 @@ export default function Navbar() {
 
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="relative z-50 p-2 -mr-2 rounded-xl hover:bg-white/10 transition-colors text-slate-200"
+            className="relative z-50 p-2.5 rounded-xl hover:bg-white/10 transition-colors text-slate-200"
             aria-label="Toggle menu"
           >
             {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}

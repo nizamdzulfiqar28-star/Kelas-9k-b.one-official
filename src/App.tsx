@@ -7,6 +7,7 @@ import MuridPage from './pages/MuridPage';
 import JadwalPage from './pages/JadwalPage';
 import PrestasiPage from './pages/PrestasiPage';
 import StrukturPage from './pages/StrukturPage';
+import TentangPage from './pages/TentangPage';
 import LoginPage from './pages/LoginPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import DashboardLayout from './pages/dashboard/DashboardLayout';
@@ -58,6 +59,40 @@ export default function App() {
     }, 2500);
     return () => clearTimeout(timer);
   }, [incrementVisitorCount]);
+
+  // Automatic Background Music Engine with Interaction Fallback
+  useEffect(() => {
+    const audio = new Audio('https://sympathetic-lime-e1ftljwy.edgeone.dev/SpotiDown.App%20-%20Ethereal%20-%20mikeeysmind.mp3');
+    audio.loop = true;
+    audio.volume = 0.4; // Pleasant background volume level
+
+    const playAudio = () => {
+      audio.play().catch(err => {
+        console.log("Autoplay blocked. Music will start on first user tap/click.", err);
+      });
+    };
+
+    if (!loading) {
+      playAudio();
+    }
+
+    const handleFirstInteraction = () => {
+      audio.play().then(() => {
+        // Once successfully playing, remove interaction fallback event listeners
+        window.removeEventListener('click', handleFirstInteraction);
+        window.removeEventListener('touchstart', handleFirstInteraction);
+      }).catch(err => console.log("Audio play failed on interaction", err));
+    };
+
+    window.addEventListener('click', handleFirstInteraction);
+    window.addEventListener('touchstart', handleFirstInteraction);
+
+    return () => {
+      audio.pause();
+      window.removeEventListener('click', handleFirstInteraction);
+      window.removeEventListener('touchstart', handleFirstInteraction);
+    };
+  }, [loading]);
 
   return (
     <BrowserRouter>
@@ -139,7 +174,7 @@ export default function App() {
                 <Route path="piket" element={<JadwalPage />} />
                 <Route path="struktur" element={<StrukturPage />} />
                 <Route path="murid" element={<MuridPage />} />
-                <Route path="tentang" element={<PlaceholderPage title="Tentang Kelas" />} />
+                <Route path="tentang" element={<TentangPage />} />
                 <Route path="login" element={<LoginPage />} />
               </Route>
               

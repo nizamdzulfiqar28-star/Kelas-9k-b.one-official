@@ -84,6 +84,9 @@ interface DataState {
   updatePickets: (day: string, students: string[]) => void;
   
   updateOrgMember: (id: string, member: Partial<OrgMember>) => void;
+  addOrgMember: (member: Omit<OrgMember, 'id'>) => void;
+  deleteOrgMember: (id: string) => void;
+  clearActivities: () => void;
 }
 
 export const useDataStore = create<DataState>()(
@@ -105,6 +108,7 @@ export const useDataStore = create<DataState>()(
       ],
       
       incrementVisitorCount: () => set((state) => ({ visitorCount: state.visitorCount + 1 })),
+      clearActivities: () => set(() => ({ activities: [] })),
 
       addUser: (user) => set((state) => ({ users: [...state.users, { ...user, id: Date.now().toString() }] })),
       updateUser: (id, user) => set((state) => ({
@@ -238,10 +242,44 @@ export const useDataStore = create<DataState>()(
           organization: state.organization.map((o) => o.id === id ? { ...o, ...member } : o),
           activities: [newActivity, ...state.activities].slice(0, 50)
         };
+      }),
+      
+      addOrgMember: (member) => set((state) => {
+        const userName = useAuthStore.getState().user?.name || 'Seseorang';
+        const newActivity: Activity = {
+          id: Date.now().toString(),
+          user: userName,
+          action: `menambahkan Jabatan Organisasi Baru (${member.role})`,
+          timestamp: new Date().toISOString()
+        };
+        const newMember: OrgMember = {
+          id: Date.now().toString(),
+          ...member
+        };
+        return {
+          organization: [...state.organization, newMember],
+          activities: [newActivity, ...state.activities].slice(0, 50)
+        };
+      }),
+
+      deleteOrgMember: (id) => set((state) => {
+        const userName = useAuthStore.getState().user?.name || 'Seseorang';
+        const existingMember = state.organization.find((o) => o.id === id);
+        const memberRole = existingMember?.role || 'Struktur';
+        const newActivity: Activity = {
+          id: Date.now().toString(),
+          user: userName,
+          action: `menghapus Jabatan Organisasi (${memberRole})`,
+          timestamp: new Date().toISOString()
+        };
+        return {
+          organization: state.organization.filter((o) => o.id !== id),
+          activities: [newActivity, ...state.activities].slice(0, 50)
+        };
       })
     }),
     {
-      name: 'class-data-storage-v2',
+      name: 'class-data-storage-v3',
     }
   )
 );

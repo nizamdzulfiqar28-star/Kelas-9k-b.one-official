@@ -2,14 +2,21 @@ import React from 'react';
 import { useDataStore } from '@/store/dataStore';
 import { motion } from 'motion/react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Users, Shield, FileText, Wallet } from 'lucide-react';
+import { Users, Shield, FileText, Wallet, Sparkles, Wrench, BookOpen } from 'lucide-react';
 
 export default function StrukturPage() {
   const { organization } = useDataStore();
 
-  const pimpinan = organization.slice(0, 2);
-  const sekretariat = organization.slice(2, 4);
-  const keuangan = organization.slice(4, 6);
+  const pimpinan = organization.filter(o => o.role.toLowerCase().includes('ketua'));
+  const sekretariat = organization.filter(o => o.role.toLowerCase().includes('sekretaris'));
+  const keuangan = organization.filter(o => o.role.toLowerCase().includes('bendahara'));
+  const keamanan = organization.filter(o => o.role.toLowerCase().includes('keamanan'));
+  const kebersihan = organization.filter(o => o.role.toLowerCase().includes('kebersihan'));
+  const peralatan = organization.filter(o => o.role.toLowerCase().includes('peralatan'));
+  const kerohanian = organization.filter(o => o.role.toLowerCase().includes('kerohanian'));
+
+  const exclusionRoles = ['ketua', 'sekretaris', 'bendahara', 'keamanan', 'kebersihan', 'peralatan', 'kerohanian'];
+  const lainnya = organization.filter(o => !exclusionRoles.some(ex => o.role.toLowerCase().includes(ex)));
 
   const renderGroup = (title: string, icon: any, members: typeof organization) => {
     return (
@@ -54,7 +61,9 @@ export default function StrukturPage() {
                   </div>
                 </div>
                 <CardContent className="pb-8">
-                  <h3 className="text-xl font-bold font-heading text-white">{org.name}</h3>
+                  <h3 className={`text-xl font-bold font-heading ${org.name ? "text-white" : "text-slate-500 italic"}`}>
+                    {org.name || "Belum ditentukan"}
+                  </h3>
                 </CardContent>
               </Card>
             </motion.div>
@@ -75,6 +84,11 @@ export default function StrukturPage() {
         {pimpinan.length > 0 && renderGroup("Pimpinan Kelas", <Shield className="w-5 h-5 text-[#CBA358]" />, pimpinan)}
         {sekretariat.length > 0 && renderGroup("Sekretariat", <FileText className="w-5 h-5 text-[#CBA358]" />, sekretariat)}
         {keuangan.length > 0 && renderGroup("Keuangan Kelas", <Wallet className="w-5 h-5 text-[#CBA358]" />, keuangan)}
+        {keamanan.length > 0 && renderGroup("Keamanan Kelas", <Shield className="w-5 h-5 text-[#CBA358]" />, keamanan)}
+        {kebersihan.length > 0 && renderGroup("Seksi Kebersihan", <Sparkles className="w-5 h-5 text-[#CBA358]" />, kebersihan)}
+        {peralatan.length > 0 && renderGroup("Seksi Peralatan", <Wrench className="w-5 h-5 text-[#CBA358]" />, peralatan)}
+        {kerohanian.length > 0 && renderGroup("Seksi Kerohanian", <BookOpen className="w-5 h-5 text-[#CBA358]" />, kerohanian)}
+        {lainnya.length > 0 && renderGroup("Seksi / Jabatan Lainnya", <Users className="w-5 h-5 text-[#CBA358]" />, lainnya)}
       </div>
     </div>
   );

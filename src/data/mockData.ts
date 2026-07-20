@@ -4,12 +4,12 @@ export const students = [
   { id: '3', absen: '03', name: 'Ari', gender: 'L' },
   { id: '4', absen: '04', name: 'Chalisa', gender: 'P' },
   { id: '5', absen: '05', name: 'Denis', gender: 'L' },
-  { id: '6', absen: '06', name: 'Ega', gender: 'L' },
+  { id: '6', absen: '06', name: 'Ega', gender: 'P' },
   { id: '7', absen: '07', name: 'Faisal', gender: 'L' },
   { id: '8', absen: '08', name: 'Ghazwan', gender: 'L' },
   { id: '9', absen: '09', name: 'Hasya', gender: 'P' },
   { id: '10', absen: '10', name: 'Kayyisa', gender: 'P' },
-  { id: '11', absen: '11', name: 'Lili', gender: 'P' },
+  { id: '11', absen: '11', name: 'Lili', gender: 'L' },
   { id: '12', absen: '12', name: 'Marwah Syifa Septiani', gender: 'P' },
   { id: '13', absen: '13', name: 'M.Rafi', gender: 'L' },
   { id: '14', absen: '14', name: 'M.Haikal', gender: 'L' },
@@ -48,11 +48,11 @@ export const schedule = [
 ];
 
 export const pickets = [
-  { day: 'Senin', students: ['Ahmad Faisal', 'Dina Karmila'] },
-  { day: 'Selasa', students: ['Bunga Lestari', 'Gilang Ramadhan'] },
-  { day: 'Rabu', students: ['Cahyo Purnomo', 'Fatimah Az Zahra'] },
-  { day: 'Kamis', students: ['Eko Prasetyo'] },
-  { day: 'Jumat', students: ['Semua Murid (Jumat Bersih)'] },
+  { day: 'Senin', students: [] },
+  { day: 'Selasa', students: [] },
+  { day: 'Rabu', students: [] },
+  { day: 'Kamis', students: [] },
+  { day: 'Jumat', students: [] },
 ];
 
 export const achievements = [];
@@ -64,4 +64,12 @@ export const organization = [
   { id: '4', role: 'Wakil Sekretaris', name: 'Sintia', url: '' },
   { id: '5', role: 'Bendahara', name: 'Eko Prasetyo', url: '' },
   { id: '6', role: 'Wakil Bendahara', name: 'Aqilah', url: '' },
+  { id: '7', role: 'Keamanan 1', name: '', url: '' },
+  { id: '8', role: 'Keamanan 2', name: '', url: '' },
+  { id: '9', role: 'Kebersihan 1', name: '', url: '' },
+  { id: '10', role: 'Kebersihan 2', name: '', url: '' },
+  { id: '11', role: 'Peralatan 1', name: '', url: '' },
+  { id: '12', role: 'Peralatan 2', name: '', url: '' },
+  { id: '13', role: 'Kerohanian 1', name: '', url: '' },
+  { id: '14', role: 'Kerohanian 2', name: '', url: '' },
 ];

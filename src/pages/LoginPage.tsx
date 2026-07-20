@@ -38,12 +38,7 @@ export default function LoginPage() {
           navigate('/dashboard');
         }, 500);
       } else {
-        // More informative error messages
-        if (username === 'nizam.dev') {
-          setErrorMsg('Password salah untuk akun Owner. Silahkan coba lagi.');
-        } else {
-          setErrorMsg('Username atau password tidak ditemukan. Kamu bukan admin web kelas 9k yaa, sorry.');
-        }
+        setErrorMsg('kamu bukan admin web kelas 9k yaa  , jadi gabisa login , kamu siapa kok tiba tiba mau login ??');
       }
     }, 800);
   };
@@ -63,7 +58,7 @@ export default function LoginPage() {
               <Lock className="w-8 h-8 text-indigo-400" />
             </div>
             <h1 className="text-3xl font-heading font-bold text-white mb-2">Login Portal</h1>
-            <p className="text-slate-400 text-sm">Masuk untuk mengakses Dashboard CMS (Owner/Admin).</p>
+            <p className="text-slate-400 text-sm">silakan login untuk mengakses dashboard web ini</p>
           </div>
 
           {success ? (

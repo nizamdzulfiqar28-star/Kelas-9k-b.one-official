@@ -4,6 +4,14 @@ import { motion } from 'motion/react';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
+const getFilledSubjects = (subjects: string[]) => {
+  const result = [...subjects];
+  while (result.length > 0 && (!result[result.length - 1] || result[result.length - 1].trim() === '')) {
+    result.pop();
+  }
+  return result;
+};
+
 export default function JadwalPage() {
   const [activeTab, setActiveTab] = useState<'pelajaran' | 'piket'>('pelajaran');
   const { schedules: schedule, pickets } = useDataStore();
@@ -60,7 +68,7 @@ export default function JadwalPage() {
                 </div>
                 <CardContent className="p-0">
                   <ul className="divide-y divide-white/5">
-                    {day.subjects.map((subject, idx) => (
+                    {getFilledSubjects(day.subjects).map((subject, idx) => (
                       <li key={idx} className={cn(
                         "px-6 py-3 flex items-center justify-between text-sm",
                         subject === 'Istirahat' ? "bg-slate-900/50 text-slate-500 font-medium italic" : "text-slate-300"
@@ -97,12 +105,18 @@ export default function JadwalPage() {
                 </div>
                 <CardContent className="p-6">
                   <ul className="space-y-3">
-                    {day.students.map((student, idx) => (
-                      <li key={idx} className="flex items-center gap-3 text-slate-300">
-                        <div className="w-2 h-2 rounded-full bg-orange-500/50" />
-                        {student}
+                    {day.students && day.students.length > 0 ? (
+                      day.students.map((student, idx) => (
+                        <li key={idx} className="flex items-center gap-3 text-slate-300">
+                          <div className="w-2 h-2 rounded-full bg-orange-500/50" />
+                          {student}
+                        </li>
+                      ))
+                    ) : (
+                      <li className="text-center py-4 text-slate-500 text-sm italic">
+                        jadwal piket belum dibentuk
                       </li>
-                    ))}
+                    )}
                   </ul>
                 </CardContent>
               </Card>

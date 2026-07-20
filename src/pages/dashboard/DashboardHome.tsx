@@ -1,18 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { createPortal } from 'react-dom';
+import { motion, AnimatePresence } from 'motion/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Image, Trophy, Users, Calendar, Eye } from 'lucide-react';
+import { Image, Trophy, Users, Calendar, Eye, Trash2 } from 'lucide-react';
 import { useDataStore } from '@/store/dataStore';
+import { useAuthStore } from '@/store/authStore';
 import { students } from '@/data/mockData';
 
 export default function DashboardHome() {
   const [loading, setLoading] = useState(true);
-  const { documentations, achievements, schedules, visitorCount, activities } = useDataStore();
+  const [notification, setNotification] = useState<string | null>(null);
+  const { documentations, achievements, schedules, visitorCount, activities, clearActivities } = useDataStore();
+  const { role } = useAuthStore();
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 500);
     return () => clearTimeout(timer);
   }, []);
+
+  const handleClearHistory = () => {
+    if (role === 'OWNER') {
+      clearActivities();
+      setNotification('Riwayat aktivitas berhasil dihapus.');
+      setTimeout(() => setNotification(null), 3000);
+    } else {
+      setNotification('fitur khusus owner !!');
+      setTimeout(() => setNotification(null), 3000);
+    }
+  };
 
   function formatRelativeTime(timestamp: string) {
     try {
@@ -56,6 +71,24 @@ export default function DashboardHome() {
 
   return (
     <div>
+      {typeof document !== 'undefined' && document.body && createPortal(
+        <AnimatePresence>
+          {notification && (
+            <motion.div
+              initial={{ opacity: 0, y: 50, x: '-50%' }}
+              animate={{ opacity: 1, y: 0, x: '-50%' }}
+              exit={{ opacity: 0, y: 50, x: '-50%' }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              className="fixed bottom-6 left-1/2 z-[9999] flex items-center gap-3.5 px-6 py-4 bg-slate-900/95 backdrop-blur-xl border border-red-500/30 text-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] min-w-[280px] sm:min-w-[320px] justify-center"
+            >
+              <div className={`w-3 h-3 rounded-full ${notification.includes('khusus') ? 'bg-red-500 animate-ping shadow-lg shadow-red-500/50' : 'bg-emerald-500 shadow-lg shadow-emerald-500/50'}`} />
+              <span className="font-sans text-sm font-bold tracking-wide text-red-200 text-center">{notification}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+
       <h2 className="text-2xl font-heading font-bold text-white mb-6">Dashboard Statistik</h2>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
@@ -82,8 +115,15 @@ export default function DashboardHome() {
       </div>
 
       <Card className="bg-white/5 border border-white/10">
-        <CardHeader className="border-b border-white/10 pb-4">
+        <CardHeader className="border-b border-white/10 pb-4 flex flex-row items-center justify-between space-y-0">
           <CardTitle className="text-lg font-heading text-white">Aktivitas Terbaru</CardTitle>
+          <button
+            onClick={handleClearHistory}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-sans font-semibold tracking-wide border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-all duration-200"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Hapus Riwayat</span>
+          </button>
         </CardHeader>
         <CardContent className="pt-6">
           <div className="space-y-4">
