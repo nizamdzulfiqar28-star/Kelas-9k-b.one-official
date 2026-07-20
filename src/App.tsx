@@ -46,8 +46,8 @@ const DashboardPlaceholder = ({ title }: { title: string }) => (
 
 // Create global Audio instance outside React lifecycle with multi-source fallback
 const AUDIO_URLS = [
-  '/bg-music.mp3',
-  'https://sympathetic-lime-e1ftljwy.edgeone.dev/SpotiDown.App%20-%20Ethereal%20-%20mikeeysmind.mp3'
+  'https://sympathetic-lime-e1ftljwy.edgeone.dev/SpotiDown.App%20-%20Ethereal%20-%20mikeeysmind.mp3',
+  '/bg-music.mp3'
 ];
 
 let currentAudioIndex = 0;
@@ -58,7 +58,7 @@ if (globalAudio) {
   globalAudio.volume = 0.4; // Pleasant background volume level
   globalAudio.preload = 'auto';
 
-  // If local file fails (e.g. not committed/not found on Vercel), fallback immediately to CDN!
+  // If the stream has any issue, fall back to the local file
   globalAudio.addEventListener('error', () => {
     if (currentAudioIndex < AUDIO_URLS.length - 1) {
       currentAudioIndex++;
