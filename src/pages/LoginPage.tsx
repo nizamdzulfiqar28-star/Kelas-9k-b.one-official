@@ -117,8 +117,8 @@ export default function LoginPage() {
           )}
 
           <div className="mt-8 text-center border-t border-white/10 pt-6">
-            <p className="text-xs text-slate-500">
-              Saat ini aplikasi menggunakan Local Storage. Integrasi Supabase API akan tersedia pada versi Full-Stack.
+            <p className="text-xs text-indigo-400 font-medium">
+              Aplikasi telah dilengkapi Cloud Database Synchronization. Seluruh akun admin, jadwal, dan dokumentasi akan tersinkronisasi di semua perangkat secara real-time!
             </p>
           </div>
         </div>

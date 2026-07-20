@@ -87,7 +87,38 @@ interface DataState {
   addOrgMember: (member: Omit<OrgMember, 'id'>) => void;
   deleteOrgMember: (id: string) => void;
   clearActivities: () => void;
+  isSyncing: boolean;
+  syncFromCloud: () => Promise<void>;
+  syncToCloud: () => Promise<void>;
 }
+
+const CLOUD_BIN_URL = 'https://api.restful-api.dev/objects/ff8081819f7e10ae019f800dd2603c1';
+
+const pushToCloud = async (state: any) => {
+  try {
+    const payload = {
+      name: "Class-9KB-Database-Sync",
+      data: {
+        users: state.users,
+        achievements: state.achievements,
+        documentations: state.documentations,
+        schedules: state.schedules,
+        pickets: state.pickets,
+        organization: state.organization,
+        visitorCount: state.visitorCount,
+        activities: state.activities,
+        lastUpdated: new Date().toISOString()
+      }
+    };
+    await fetch(CLOUD_BIN_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+  } catch (err) {
+    console.error('Error syncing to cloud:', err);
+  }
+};
 
 export const useDataStore = create<DataState>()(
   persist(
@@ -107,6 +138,42 @@ export const useDataStore = create<DataState>()(
         { id: 'act-2', user: 'Admin', action: 'menambahkan Dokumentasi "Study Tour Bali"', timestamp: new Date(Date.now() - 3600000 * 5).toISOString() }
       ],
       
+      isSyncing: false,
+      syncFromCloud: async () => {
+        set({ isSyncing: true });
+        try {
+          const res = await fetch(CLOUD_BIN_URL);
+          if (res.ok) {
+            const wrapper = await res.json();
+            const cloudData = wrapper?.data;
+            if (cloudData && cloudData.users && cloudData.users.length > 0) {
+              set({
+                users: cloudData.users,
+                achievements: cloudData.achievements || [],
+                documentations: cloudData.documentations || [],
+                schedules: cloudData.schedules || [],
+                pickets: cloudData.pickets || [],
+                organization: cloudData.organization || [],
+                visitorCount: cloudData.visitorCount || 142,
+                activities: cloudData.activities || [],
+                isSyncing: false
+              });
+              return;
+            } else {
+              const currentState = useDataStore.getState();
+              await pushToCloud(currentState);
+            }
+          }
+        } catch (err) {
+          console.error('Error syncing from cloud:', err);
+        }
+        set({ isSyncing: false });
+      },
+      syncToCloud: async () => {
+        const currentState = useDataStore.getState();
+        await pushToCloud(currentState);
+      },
+
       incrementVisitorCount: () => set((state) => ({ visitorCount: state.visitorCount + 1 })),
       clearActivities: () => set(() => ({ activities: [] })),
 
@@ -307,3 +374,13 @@ export const useDataStore = create<DataState>()(
     }
   )
 );
+
+// Subscribe to store updates and push to cloud automatically with a 1-second debounce
+let syncTimeout: any = null;
+useDataStore.subscribe((state) => {
+  if (state.isSyncing) return; // don't sync while pulling
+  if (syncTimeout) clearTimeout(syncTimeout);
+  syncTimeout = setTimeout(() => {
+    pushToCloud(state);
+  }, 1000);
+});

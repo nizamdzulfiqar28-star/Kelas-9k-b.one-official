@@ -85,7 +85,12 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
   const [readyToEnter, setReadyToEnter] = useState(false);
-  const { incrementVisitorCount } = useDataStore();
+  const { incrementVisitorCount, syncFromCloud } = useDataStore();
+
+  useEffect(() => {
+    // Sync with cloud on startup
+    syncFromCloud();
+  }, [syncFromCloud]);
 
   useEffect(() => {
     // Only increment visitor count once per browser session
