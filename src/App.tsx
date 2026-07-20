@@ -46,8 +46,9 @@ const DashboardPlaceholder = ({ title }: { title: string }) => (
 
 // Create global Audio instance outside React lifecycle with multi-source fallback
 const AUDIO_URLS = [
-  'https://sympathetic-lime-e1ftljwy.edgeone.dev/SpotiDown.App%20-%20Ethereal%20-%20mikeeysmind.mp3',
-  '/bg-music.mp3'
+  'https://litter.catbox.moe/udmf9b.mp3', // Super fast direct CDN link with range-request & CORS support (resolves mobile Safari/Vercel silence!)
+  'https://d.uguu.se/HkdkPCdk.mp3',      // Fast secondary fallback direct stream link
+  '/bg-music.mp3'                        // Local static file fallback
 ];
 
 let currentAudioIndex = 0;
@@ -58,7 +59,7 @@ if (globalAudio) {
   globalAudio.volume = 0.4; // Pleasant background volume level
   globalAudio.preload = 'auto';
 
-  // If the stream has any issue, fall back to the local file
+  // If the active stream has any issue, automatically fall back to the next source
   globalAudio.addEventListener('error', () => {
     if (currentAudioIndex < AUDIO_URLS.length - 1) {
       currentAudioIndex++;
