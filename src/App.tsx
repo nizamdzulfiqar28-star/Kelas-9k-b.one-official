@@ -46,29 +46,39 @@ const DashboardPlaceholder = ({ title }: { title: string }) => (
 
 // Create global Audio instance outside React lifecycle with multi-source fallback
 const AUDIO_URLS = [
+  '/bg-music.mp3',                        // Local static file is preferred as first option (super fast, same-origin, no CORS, works on Vercel)
   'https://litter.catbox.moe/udmf9b.mp3', // Super fast direct CDN link with range-request & CORS support (resolves mobile Safari/Vercel silence!)
-  'https://d.uguu.se/HkdkPCdk.mp3',      // Fast secondary fallback direct stream link
-  '/bg-music.mp3'                        // Local static file fallback
+  'https://d.uguu.se/HkdkPCdk.mp3'       // Fast secondary fallback direct stream link
 ];
 
 let currentAudioIndex = 0;
-const globalAudio = typeof window !== 'undefined' ? new Audio(AUDIO_URLS[0]) : null;
+let globalAudio: HTMLAudioElement | null = null;
 
-if (globalAudio) {
-  globalAudio.loop = true;
-  globalAudio.volume = 0.4; // Pleasant background volume level
-  globalAudio.preload = 'auto';
-  globalAudio.load(); // Force immediate background pre-buffering to eliminate playback latency
+// Pure and extremely reliable initializer triggered inside user interactions
+function getOrCreateAudio() {
+  if (typeof window === 'undefined') return null;
+  if (!globalAudio) {
+    globalAudio = new Audio();
+    globalAudio.loop = true;
+    globalAudio.volume = 0.45;
+    globalAudio.preload = 'auto';
+    globalAudio.src = AUDIO_URLS[currentAudioIndex];
+    globalAudio.load();
 
-  // If the active stream has any issue, automatically fall back to the next source
-  globalAudio.addEventListener('error', () => {
-    if (currentAudioIndex < AUDIO_URLS.length - 1) {
-      currentAudioIndex++;
-      console.log(`Audio stream error. Falling back to source: ${AUDIO_URLS[currentAudioIndex]}`);
-      globalAudio.src = AUDIO_URLS[currentAudioIndex];
-      globalAudio.load();
-    }
-  });
+    // If the active stream has any issue, automatically fall back to the next source
+    globalAudio.addEventListener('error', () => {
+      if (currentAudioIndex < AUDIO_URLS.length - 1) {
+        currentAudioIndex++;
+        console.log(`Audio stream error. Falling back to source: ${AUDIO_URLS[currentAudioIndex]}`);
+        if (globalAudio) {
+          globalAudio.src = AUDIO_URLS[currentAudioIndex];
+          globalAudio.load();
+          globalAudio.play().catch(err => console.log("Fallback audio play failed", err));
+        }
+      }
+    });
+  }
+  return globalAudio;
 }
 
 export default function App() {
@@ -117,25 +127,28 @@ export default function App() {
     };
   }, []);
 
-  // Attempt autoplay immediately as early as possible
+  // Attempt autoplay immediately as early as possible on any interaction
   useEffect(() => {
-    if (!globalAudio) return;
-
-    const playAudio = () => {
-      globalAudio.play().catch(err => {
-        console.log("Autoplay blocked. Music will start on user interaction.", err);
-      });
+    const startAudio = () => {
+      const audio = getOrCreateAudio();
+      if (audio) {
+        audio.play().then(() => {
+          console.log("Audio playing successfully!");
+          // Once successfully playing, remove interaction fallback event listeners
+          window.removeEventListener('click', handleFirstInteraction);
+          window.removeEventListener('touchstart', handleFirstInteraction);
+        }).catch(err => {
+          console.log("Autoplay blocked or failed. Will try on next interaction.", err);
+        });
+      }
     };
-
-    playAudio();
 
     const handleFirstInteraction = () => {
-      globalAudio.play().then(() => {
-        // Once successfully playing, remove interaction fallback event listeners
-        window.removeEventListener('click', handleFirstInteraction);
-        window.removeEventListener('touchstart', handleFirstInteraction);
-      }).catch(err => console.log("Audio play failed on interaction", err));
+      startAudio();
     };
+
+    // Try to trigger on load (though standard browser policies might block it, it will succeed instantly on first click/touch)
+    startAudio();
 
     window.addEventListener('click', handleFirstInteraction);
     window.addEventListener('touchstart', handleFirstInteraction);
@@ -150,8 +163,9 @@ export default function App() {
     if (e) {
       e.stopPropagation();
     }
-    if (globalAudio) {
-      globalAudio.play().catch(err => console.log("Audio play failed", err));
+    const audio = getOrCreateAudio();
+    if (audio) {
+      audio.play().catch(err => console.log("Audio play failed on enter", err));
     }
     setLoading(false);
   };
