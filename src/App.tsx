@@ -58,6 +58,7 @@ if (globalAudio) {
   globalAudio.loop = true;
   globalAudio.volume = 0.4; // Pleasant background volume level
   globalAudio.preload = 'auto';
+  globalAudio.load(); // Force immediate background pre-buffering to eliminate playback latency
 
   // If the active stream has any issue, automatically fall back to the next source
   globalAudio.addEventListener('error', () => {
@@ -90,14 +91,13 @@ export default function App() {
 
     const runPreload = async () => {
       // Create a super fast, buttery-smooth simulated progress bar.
-      // Since the logo is fully base64-embedded (0ms download) and the audio plays/streams instantly on click,
-      // we can simulate loading progress in ~1.5s to provide a highly polished, responsive intro!
+      // Reaches 100% in ~200-300ms for a snappy, instantaneous feedback.
       let currentProgress = 0;
       while (active && currentProgress < 100) {
-        const delay = Math.random() * 50 + 30; // 30-80ms
+        const delay = Math.random() * 15 + 5; // 5-20ms
         await new Promise((r) => setTimeout(r, delay));
         if (!active) return;
-        currentProgress += Math.floor(Math.random() * 8) + 4; // 4-12% increase
+        currentProgress += Math.floor(Math.random() * 12) + 8; // 8-20% increase
         if (currentProgress > 100) currentProgress = 100;
         setProgress(currentProgress);
       }
@@ -106,7 +106,7 @@ export default function App() {
         setProgress(100);
         setTimeout(() => {
           if (active) setReadyToEnter(true);
-        }, 200);
+        }, 80);
       }
     };
 
@@ -167,9 +167,7 @@ export default function App() {
             key="loader"
             initial={{ opacity: 1 }}
             exit={{ opacity: 0, transition: { duration: 0.5 } }}
-            onClick={() => {
-              if (readyToEnter) handleEnter();
-            }}
+            onClick={() => handleEnter()}
             className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#060609] cursor-pointer"
           >
             <motion.div
@@ -273,10 +271,9 @@ export default function App() {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={handleEnter}
-                      className="mt-2 px-6 py-2.5 bg-gradient-to-r from-[#d4af37]/20 to-[#d4af37]/5 hover:from-[#d4af37]/30 hover:to-[#d4af37]/15 border border-[#d4af37]/40 text-[#d4af37] rounded-full font-heading font-semibold text-xs tracking-widest uppercase shadow-[0_0_15px_rgba(212,175,55,0.15)] transition-all duration-300 flex items-center gap-2 cursor-pointer relative z-20"
+                      className="mt-2 px-6 py-2.5 bg-gradient-to-r from-[#d4af37]/20 to-[#d4af37]/5 hover:from-[#d4af37]/30 hover:to-[#d4af37]/15 border border-[#d4af37]/40 text-[#d4af37] rounded-full font-heading font-semibold text-xs tracking-widest uppercase shadow-[0_0_15px_rgba(212,175,55,0.15)] transition-all duration-300 flex items-center justify-center cursor-pointer relative z-20"
                     >
-                      <span>Masuk ke Album</span>
-                      <Volume2 className="w-3.5 h-3.5 animate-pulse" />
+                      <span>klik tombol ini untuk melihat album</span>
                     </motion.button>
                   )}
                 </AnimatePresence>
