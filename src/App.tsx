@@ -23,6 +23,7 @@ import { CustomCursor } from './components/ui/CustomCursor';
 import { motion, AnimatePresence } from 'motion/react';
 import { useDataStore } from './store/dataStore';
 import ScrollToTop from './components/layout/ScrollToTop';
+import { Volume2 } from 'lucide-react';
 
 // Placeholder components for routes we haven't built yet
 const PlaceholderPage = ({ title }: { title: string }) => (
@@ -42,8 +43,18 @@ const DashboardPlaceholder = ({ title }: { title: string }) => (
   </div>
 );
 
+// Create global Audio instance outside React lifecycle for instant preloading
+const globalAudio = typeof window !== 'undefined' ? new Audio('/bg-music.mp3') : null;
+if (globalAudio) {
+  globalAudio.loop = true;
+  globalAudio.volume = 0.4; // Pleasant background volume level
+  globalAudio.preload = 'auto';
+}
+
 export default function App() {
   const [loading, setLoading] = useState(true);
+  const [progress, setProgress] = useState(0);
+  const [readyToEnter, setReadyToEnter] = useState(false);
   const { incrementVisitorCount } = useDataStore();
 
   useEffect(() => {
@@ -53,31 +64,117 @@ export default function App() {
       incrementVisitorCount();
       sessionStorage.setItem('has_visited', 'true');
     }
-
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 2500);
-    return () => clearTimeout(timer);
   }, [incrementVisitorCount]);
 
-  // Automatic Background Music Engine with Interaction Fallback
   useEffect(() => {
-    const audio = new Audio('https://sympathetic-lime-e1ftljwy.edgeone.dev/SpotiDown.App%20-%20Ethereal%20-%20mikeeysmind.mp3');
-    audio.loop = true;
-    audio.volume = 0.4; // Pleasant background volume level
+    let active = true;
+
+    const runPreload = async () => {
+      let logoDone = false;
+      let audioProgressPercent = 0;
+
+      // Logo Image Preloader
+      const preloadLogo = new Promise<void>((resolve) => {
+        const img = new Image();
+        img.src = '/logo.png';
+        img.onload = () => {
+          logoDone = true;
+          if (active) {
+            setProgress((prev) => {
+              const audioContribution = prev > 15 ? prev - 15 : 0;
+              return Math.min(Math.round(15 + audioContribution), 100);
+            });
+          }
+          resolve();
+        };
+        img.onerror = () => {
+          logoDone = true;
+          resolve();
+        };
+      });
+
+      // Audio Fetch Preloader with progress tracking
+      const preloadAudio = async () => {
+        try {
+          const response = await fetch('/bg-music.mp3');
+          if (!response.ok) throw new Error('Response error');
+          
+          const contentLength = response.headers.get('content-length');
+          const totalBytes = contentLength ? parseInt(contentLength, 10) : 0;
+
+          if (totalBytes === 0) {
+            throw new Error('Zero total bytes');
+          }
+
+          const reader = response.body?.getReader();
+          if (!reader) throw new Error('No reader');
+
+          let receivedBytes = 0;
+          while (active) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            receivedBytes += value.length;
+            audioProgressPercent = (receivedBytes / totalBytes) * 85;
+            
+            if (active) {
+              setProgress(() => {
+                const logoContribution = logoDone ? 15 : 0;
+                return Math.min(Math.round(logoContribution + audioProgressPercent), 99);
+              });
+            }
+          }
+        } catch (err) {
+          console.warn('Real audio stream failed or blocked, using smooth simulation fallback', err);
+          // Simulate audio progress smoothly
+          let simulatedAudio = 0;
+          while (active && simulatedAudio < 85) {
+            await new Promise((r) => setTimeout(r, 60));
+            simulatedAudio += Math.random() * 5 + 2;
+            audioProgressPercent = Math.min(simulatedAudio, 85);
+            if (active) {
+              setProgress(() => {
+                const logoContribution = logoDone ? 15 : 0;
+                return Math.min(Math.round(logoContribution + audioProgressPercent), 99);
+              });
+            }
+          }
+        }
+      };
+
+      // Run logo loading and audio stream download concurrently
+      await Promise.all([preloadLogo, preloadAudio()]);
+
+      if (active) {
+        setProgress(100);
+        // Add a micro delay for visual satisfaction of reaching 100%
+        setTimeout(() => {
+          if (active) setReadyToEnter(true);
+        }, 400);
+      }
+    };
+
+    runPreload();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Attempt autoplay immediately as early as possible
+  useEffect(() => {
+    if (!globalAudio) return;
 
     const playAudio = () => {
-      audio.play().catch(err => {
-        console.log("Autoplay blocked. Music will start on first user tap/click.", err);
+      globalAudio.play().catch(err => {
+        console.log("Autoplay blocked. Music will start on user interaction.", err);
       });
     };
 
-    if (!loading) {
-      playAudio();
-    }
+    playAudio();
 
     const handleFirstInteraction = () => {
-      audio.play().then(() => {
+      globalAudio.play().then(() => {
         // Once successfully playing, remove interaction fallback event listeners
         window.removeEventListener('click', handleFirstInteraction);
         window.removeEventListener('touchstart', handleFirstInteraction);
@@ -88,11 +185,20 @@ export default function App() {
     window.addEventListener('touchstart', handleFirstInteraction);
 
     return () => {
-      audio.pause();
       window.removeEventListener('click', handleFirstInteraction);
       window.removeEventListener('touchstart', handleFirstInteraction);
     };
-  }, [loading]);
+  }, []);
+
+  const handleEnter = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    if (globalAudio) {
+      globalAudio.play().catch(err => console.log("Audio play failed", err));
+    }
+    setLoading(false);
+  };
 
   return (
     <BrowserRouter>
@@ -105,20 +211,54 @@ export default function App() {
             key="loader"
             initial={{ opacity: 1 }}
             exit={{ opacity: 0, transition: { duration: 0.5 } }}
-            className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#060609]"
+            onClick={() => {
+              if (readyToEnter) handleEnter();
+            }}
+            className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#060609] cursor-pointer"
           >
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.8, type: "spring", bounce: 0.5 }}
-              className="relative flex flex-col items-center"
+              className="relative flex flex-col items-center animate-none"
             >
-              {/* Outer glowing ring */}
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ repeat: Infinity, duration: 4, ease: "linear" }}
-                className="w-32 h-32 rounded-full border-2 border-dashed border-[#d4af37]/40 absolute -top-4"
-              />
+              {/* Circular Progress Ring */}
+              <div className="w-32 h-32 absolute -top-4 flex items-center justify-center select-none z-0">
+                <svg className="w-full h-full transform -rotate-90">
+                  {/* Outer glow aura circle track */}
+                  <circle
+                    cx="64"
+                    cy="64"
+                    r="54"
+                    className="stroke-[#d4af37]/10"
+                    strokeWidth="3.5"
+                    fill="transparent"
+                  />
+                  {/* Live SVG Progress Ring */}
+                  <motion.circle
+                    cx="64"
+                    cy="64"
+                    r="54"
+                    className="stroke-[#d4af37]"
+                    strokeWidth="3.5"
+                    fill="transparent"
+                    strokeDasharray={2 * Math.PI * 54}
+                    animate={{
+                      strokeDashoffset: 2 * Math.PI * 54 * (1 - progress / 100),
+                    }}
+                    transition={{ duration: 0.1, ease: "easeOut" }}
+                    strokeLinecap="round"
+                  />
+                </svg>
+
+                {/* Pulsing glow underlay that intensifies with progress */}
+                <div 
+                  className="absolute inset-4 rounded-full transition-shadow duration-300 pointer-events-none"
+                  style={{
+                    boxShadow: `0 0 ${15 + (progress / 100) * 20}px rgba(212,175,55,${0.1 + (progress / 100) * 0.4})`,
+                  }}
+                />
+              </div>
               
               {/* Logo container */}
               <motion.div
@@ -126,34 +266,64 @@ export default function App() {
                 transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
                 className="w-24 h-24 rounded-full border border-[#d4af37]/30 overflow-hidden flex items-center justify-center bg-[#0c0c12] relative z-10"
               >
-                <img src="https://iili.io/CjL453N.png" alt="9K Logo" className="w-full h-full object-cover scale-[1.35]" />
+                <img src="/logo.png" alt="9K Logo" className="w-full h-full object-cover scale-[1.35]" />
               </motion.div>
 
               {/* Text */}
-              <div className="mt-12 text-center">
+              <div className="mt-12 text-center flex flex-col items-center">
                 <motion.p
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
+                  transition={{ delay: 0.2 }}
                   className="text-[#d4af37] font-heading font-semibold text-xl tracking-wider uppercase mb-2"
                 >
                   9K B.one
                 </motion.p>
-                <motion.div
-                  className="flex items-center gap-1.5 justify-center"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.6 }}
-                >
-                  <span className="text-xs text-slate-400 font-mono tracking-widest uppercase">
-                    Memuat Album
-                  </span>
-                  <motion.span
-                    animate={{ opacity: [0, 1, 0] }}
-                    transition={{ repeat: Infinity, duration: 1.2 }}
-                    className="w-1.5 h-3 bg-[#d4af37]"
-                  />
-                </motion.div>
+                
+                <AnimatePresence mode="wait">
+                  {!readyToEnter ? (
+                    <motion.div
+                      key="loading-text"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="flex flex-col items-center gap-3.5 mt-2 h-16 justify-center"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-400 font-mono tracking-widest uppercase">
+                          Memuat Album
+                        </span>
+                        <span className="text-xs font-mono font-bold text-[#d4af37]">
+                          {progress}%
+                        </span>
+                      </div>
+
+                      {/* Smooth loading bar with high-precision gradient */}
+                      <div className="w-36 h-1 bg-slate-900 border border-slate-800/60 rounded-full overflow-hidden relative">
+                        <motion.div
+                          className="absolute left-0 top-0 h-full bg-gradient-to-r from-[#d4af37]/60 via-[#d4af37] to-[#e6c865]"
+                          initial={{ width: "0%" }}
+                          animate={{ width: `${progress}%` }}
+                          transition={{ duration: 0.1, ease: "easeOut" }}
+                        />
+                      </div>
+                    </motion.div>
+                  ) : (
+                    <motion.button
+                      key="enter-button"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={handleEnter}
+                      className="mt-2 px-6 py-2.5 bg-gradient-to-r from-[#d4af37]/20 to-[#d4af37]/5 hover:from-[#d4af37]/30 hover:to-[#d4af37]/15 border border-[#d4af37]/40 text-[#d4af37] rounded-full font-heading font-semibold text-xs tracking-widest uppercase shadow-[0_0_15px_rgba(212,175,55,0.15)] transition-all duration-300 flex items-center gap-2 cursor-pointer relative z-20"
+                    >
+                      <span>Masuk ke Album</span>
+                      <Volume2 className="w-3.5 h-3.5 animate-pulse" />
+                    </motion.button>
+                  )}
+                </AnimatePresence>
               </div>
             </motion.div>
           </motion.div>

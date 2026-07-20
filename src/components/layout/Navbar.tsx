@@ -49,7 +49,7 @@ export default function Navbar() {
         <div className="container mx-auto px-6 md:px-12 flex items-center justify-between">
           <NavLink to="/" className="flex items-center gap-2 group z-50">
             <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center border border-[#d4af37]/30 shadow-lg group-hover:scale-105 transition-transform bg-[#0c0c12]">
-              <img src="https://iili.io/CjL453N.png" alt="9K Logo" className="w-full h-full object-cover scale-[1.35]" />
+              <img src="/logo.png" alt="9K Logo" className="w-full h-full object-cover scale-[1.35]" />
             </div>
             <span className="font-heading font-semibold text-xl tracking-tight text-white">9K B.one</span>
           </NavLink>
