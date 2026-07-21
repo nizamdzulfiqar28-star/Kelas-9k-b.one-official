@@ -94,23 +94,20 @@ interface DataState {
   syncToCloud: () => Promise<void>;
 }
 
-const CLOUD_BIN_URL = 'https://api.restful-api.dev/objects/ff8081819f7e10ae019f800dd2603c1';
+const CLOUD_BIN_URL = 'https://extendsclass.com/api/json-storage/bin/acbefed';
 
 const pushToCloud = async (state: any) => {
   try {
     const payload = {
-      name: "Class-9KB-Database-Sync",
-      data: {
-        users: state.users,
-        achievements: state.achievements,
-        documentations: state.documentations,
-        schedules: state.schedules,
-        pickets: state.pickets,
-        organization: state.organization,
-        visitorCount: state.visitorCount,
-        activities: state.activities,
-        lastUpdated: new Date().toISOString()
-      }
+      users: state.users,
+      achievements: state.achievements,
+      documentations: state.documentations,
+      schedules: state.schedules,
+      pickets: state.pickets,
+      organization: state.organization,
+      visitorCount: state.visitorCount,
+      activities: state.activities,
+      lastUpdated: new Date().toISOString()
     };
     await fetch(CLOUD_BIN_URL, {
       method: 'PUT',
@@ -146,8 +143,7 @@ export const useDataStore = create<DataState>()(
         try {
           const res = await fetch(CLOUD_BIN_URL);
           if (res.ok) {
-            const wrapper = await res.json();
-            const cloudData = wrapper?.data;
+            const cloudData = await res.json();
             if (cloudData && cloudData.users && cloudData.users.length > 0) {
               set({
                 users: cloudData.users,
