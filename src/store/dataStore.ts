@@ -3,6 +3,8 @@ import { persist } from 'zustand/middleware';
 import { students, documentation, schedule, pickets, achievements, organization } from '@/data/mockData';
 import { useAuthStore } from './authStore';
 
+let hasSyncedFromCloud = false;
+
 export type UserRole = 'OWNER' | 'ADMIN';
 
 export interface User {
@@ -158,10 +160,12 @@ export const useDataStore = create<DataState>()(
                 activities: cloudData.activities || [],
                 isSyncing: false
               });
+              hasSyncedFromCloud = true;
               return;
             } else {
               const currentState = useDataStore.getState();
               await pushToCloud(currentState);
+              hasSyncedFromCloud = true;
             }
           }
         } catch (err) {
@@ -379,6 +383,10 @@ export const useDataStore = create<DataState>()(
 let syncTimeout: any = null;
 useDataStore.subscribe((state) => {
   if (state.isSyncing) return; // don't sync while pulling
+  if (!hasSyncedFromCloud) {
+    console.log("Auto-sync to cloud skipped: App has not fetched the latest cloud database yet. This prevents overwriting with stale local cache.");
+    return;
+  }
   if (syncTimeout) clearTimeout(syncTimeout);
   syncTimeout = setTimeout(() => {
     pushToCloud(state);

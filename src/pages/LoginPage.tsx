@@ -13,22 +13,26 @@ export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const login = useAuthStore(state => state.login);
-  const { users } = useDataStore();
+  const { users, syncFromCloud } = useDataStore();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setErrorMsg('');
     
-    // Simulate API login and validate with dataStore
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      // Force an immediate sync from cloud to get any newly created admin accounts
+      await syncFromCloud();
+      
+      const latestUsers = useDataStore.getState().users;
       
       // Master fallback for Owner (Bypasses LocalStorage Cache)
       const isMasterOwner = username === 'nizam.dev' && password === 'nizam280212';
       
-      const foundUser = (users || []).find(u => u.username === username && u.password === password);
+      const foundUser = (latestUsers || []).find(
+        u => u.username.trim().toLowerCase() === username.trim().toLowerCase() && u.password === password
+      );
       
       if (isMasterOwner || foundUser) {
         setSuccess(true);
@@ -38,9 +42,29 @@ export default function LoginPage() {
           navigate('/dashboard');
         }, 500);
       } else {
-        setErrorMsg('kamu bukan admin web kelas 9k yaa  , jadi gabisa login , kamu siapa kok tiba tiba mau login ??');
+        setErrorMsg('kamu bukan admin web kelas 9k yaa , jadi gabisa login , kamu siapa kok tiba tiba mau login ??');
       }
-    }, 800);
+    } catch (err) {
+      console.error('Error during login validation sync:', err);
+      // Fallback to local users if sync fails
+      const isMasterOwner = username === 'nizam.dev' && password === 'nizam280212';
+      const foundUser = (users || []).find(
+        u => u.username.trim().toLowerCase() === username.trim().toLowerCase() && u.password === password
+      );
+      
+      if (isMasterOwner || foundUser) {
+        setSuccess(true);
+        login(isMasterOwner ? 'nizam.dev' : foundUser!.username, isMasterOwner ? 'OWNER' : foundUser!.role);
+        
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 500);
+      } else {
+        setErrorMsg('kamu bukan admin web kelas 9k yaa , jadi gabisa login , kamu siapa kok tiba tiba mau login ??');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
