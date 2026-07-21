@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/authStore';
 import { useDataStore } from '@/store/dataStore';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/lib/supabase';
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
@@ -21,6 +22,8 @@ export default function LoginPage() {
     setLoading(true);
     setErrorMsg('');
     
+    const email = `${username.trim().toLowerCase()}@kelas9k.com`;
+    
     try {
       // Force an immediate sync from cloud to get any newly created admin accounts
       await syncFromCloud();
@@ -35,6 +38,44 @@ export default function LoginPage() {
       );
       
       if (isMasterOwner || foundUser) {
+        // Attempt login via Supabase Auth
+        try {
+          const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+            email,
+            password
+          });
+          
+          if (authError) {
+            console.warn('[LoginPage] Supabase Auth login failed, attempting automatic registration:', authError.message);
+            
+            // If user doesn't exist, register them in Supabase Auth on the fly
+            if (authError.message.includes('Invalid login credentials') || authError.message.includes('User not found') || authError.message.includes('not confirmed')) {
+              const role = isMasterOwner ? 'OWNER' : (foundUser?.role || 'ADMIN');
+              const name = isMasterOwner ? 'Nizam DzR' : (foundUser?.name || 'Admin User');
+              
+              const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                  data: { name, role }
+                }
+              });
+              
+              if (signUpError) {
+                console.error('[LoginPage] Supabase Auth automatic registration failed:', signUpError.message);
+              } else {
+                console.log('[LoginPage] Successfully auto-registered user in Supabase Auth.');
+                // Try to sign in again after registration
+                await supabase.auth.signInWithPassword({ email, password });
+              }
+            }
+          } else {
+            console.log('[LoginPage] Successfully logged in with Supabase Auth:', authData.user?.email);
+          }
+        } catch (authException) {
+          console.warn('[LoginPage] Supabase Auth connection failed (using fallback validation):', authException);
+        }
+
         setSuccess(true);
         login(isMasterOwner ? 'nizam.dev' : foundUser!.username, isMasterOwner ? 'OWNER' : foundUser!.role);
         
@@ -53,6 +94,11 @@ export default function LoginPage() {
       );
       
       if (isMasterOwner || foundUser) {
+        // Safe attempt to login with Supabase Auth even during offline fallback
+        try {
+          await supabase.auth.signInWithPassword({ email, password });
+        } catch (_) {}
+
         setSuccess(true);
         login(isMasterOwner ? 'nizam.dev' : foundUser!.username, isMasterOwner ? 'OWNER' : foundUser!.role);
         

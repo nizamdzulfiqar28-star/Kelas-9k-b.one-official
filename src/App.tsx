@@ -22,6 +22,8 @@ import DashboardStruktur from './pages/dashboard/DashboardStruktur';
 import { CustomCursor } from './components/ui/CustomCursor';
 import { motion, AnimatePresence } from 'motion/react';
 import { useDataStore } from './store/dataStore';
+import { supabase } from './lib/supabase';
+import { useAuthStore } from './store/authStore';
 import ScrollToTop from './components/layout/ScrollToTop';
 import { Volume2 } from 'lucide-react';
 import { logoBase64 } from './logoBase64';
@@ -86,6 +88,22 @@ export default function App() {
   const [progress, setProgress] = useState(0);
   const [readyToEnter, setReadyToEnter] = useState(false);
   const { incrementVisitorCount, syncFromCloud } = useDataStore();
+
+  useEffect(() => {
+    // Synchronize Supabase Auth session with authStore
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[App] Supabase Auth event:', event);
+      if (session?.user) {
+        const metadata = session.user.user_metadata || {};
+        const username = session.user.email?.split('@')[0] || '';
+        useAuthStore.getState().login(username, metadata.role || 'ADMIN');
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     const initializeApp = async () => {

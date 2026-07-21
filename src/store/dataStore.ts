@@ -2,8 +2,10 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { students, documentation, schedule, pickets, achievements, organization } from '@/data/mockData';
 import { useAuthStore } from './authStore';
+import { supabase } from '../lib/supabase';
 
 let hasSyncedFromCloud = false;
+let isSubscribed = false;
 
 export type UserRole = 'OWNER' | 'ADMIN';
 
@@ -119,7 +121,23 @@ const pushToCloud = async (state: any) => {
       body: JSON.stringify(payload)
     });
   } catch (err) {
-    console.error('Error syncing to cloud:', err);
+    console.error('[DataStore] Error syncing to backup REST endpoint:', err);
+  }
+
+  try {
+    const keys = ['users', 'achievements', 'documentations', 'schedules', 'pickets', 'organization', 'visitorCount', 'activities'];
+    const upserts = keys.map(key => ({
+      key,
+      value: state[key]
+    }));
+    const { error } = await supabase.from('class_data').upsert(upserts);
+    if (error) {
+      console.warn('[DataStore] Supabase upsert error:', error.message);
+    } else {
+      console.log('[DataStore] Successfully pushed state to Supabase.');
+    }
+  } catch (err) {
+    console.error('[DataStore] Error syncing to Supabase:', err);
   }
 };
 
@@ -145,59 +163,123 @@ export const useDataStore = create<DataState>()(
       isSyncing: false,
       syncFromCloud: async () => {
         set({ isSyncing: true });
-        try {
-          const res = await fetch(`${CLOUD_BIN_URL}?t=${Date.now()}`);
-          if (res.ok) {
-            const cloudData = await res.json();
-            
-            // Check if cloudData is valid and not a fallback/empty state
-            if (cloudData && !cloudData._fallback) {
-              const localState = useDataStore.getState();
-              
-              // 1. Resolve users (ensure default seed users are always included)
-              const cloudUsers = cloudData.users || [];
-              const defaultUsers: User[] = [
-                { id: '1', name: 'Nizam DzR', username: 'nizam.dev', password: 'nizam280212', role: 'OWNER' },
-                { id: '2', name: 'Admin', username: 'admin', password: 'adminpassword', role: 'ADMIN' },
-                { id: '3', name: 'Typani', username: 'typani', password: 'typani', role: 'ADMIN' }
-              ];
-              const userMap = new Map<string, User>();
-              defaultUsers.forEach(u => userMap.set(u.username.toLowerCase().trim(), u));
-              cloudUsers.forEach((u: any) => {
-                if (u.username) {
-                  userMap.set(u.username.toLowerCase().trim(), u);
-                }
-              });
-              const resolvedUsers = Array.from(userMap.values());
-              
-              // 2. Direct overwrite for items (no split-brain merging of deleted items)
-              set({
-                users: resolvedUsers,
-                achievements: cloudData.achievements || [],
-                documentations: cloudData.documentations || [],
-                schedules: (cloudData.schedules && cloudData.schedules.length > 0) ? cloudData.schedules : localState.schedules,
-                pickets: (cloudData.pickets && cloudData.pickets.length > 0) ? cloudData.pickets : localState.pickets,
-                organization: (cloudData.organization && cloudData.organization.length > 0) ? cloudData.organization : localState.organization,
-                visitorCount: cloudData.visitorCount !== undefined ? cloudData.visitorCount : localState.visitorCount,
-                activities: cloudData.activities || [],
-                isSyncing: false
-              });
-              
-              hasSyncedFromCloud = true;
-              console.log('[DataStore] Successfully synced from cloud and initialized local state.');
-              return;
-            } else {
-              console.warn('[DataStore] Cloud returned a fallback or empty state, keeping local values.');
+
+        const fallbackRestSync = async () => {
+          try {
+            const res = await fetch(`${CLOUD_BIN_URL}?t=${Date.now()}`);
+            if (res.ok) {
+              const cloudData = await res.json();
+              if (cloudData && !cloudData._fallback) {
+                const localState = useDataStore.getState();
+                const cloudUsers = cloudData.users || [];
+                const defaultUsers: User[] = [
+                  { id: '1', name: 'Nizam DzR', username: 'nizam.dev', password: 'nizam280212', role: 'OWNER' },
+                  { id: '2', name: 'Admin', username: 'admin', password: 'adminpassword', role: 'ADMIN' },
+                  { id: '3', name: 'Typani', username: 'typani', password: 'typani', role: 'ADMIN' }
+                ];
+                const userMap = new Map<string, User>();
+                defaultUsers.forEach(u => userMap.set(u.username.toLowerCase().trim(), u));
+                cloudUsers.forEach((u: any) => {
+                  if (u.username) {
+                    userMap.set(u.username.toLowerCase().trim(), u);
+                  }
+                });
+                const resolvedUsers = Array.from(userMap.values());
+                
+                set({
+                  users: resolvedUsers,
+                  achievements: cloudData.achievements || [],
+                  documentations: cloudData.documentations || [],
+                  schedules: (cloudData.schedules && cloudData.schedules.length > 0) ? cloudData.schedules : localState.schedules,
+                  pickets: (cloudData.pickets && cloudData.pickets.length > 0) ? cloudData.pickets : localState.pickets,
+                  organization: (cloudData.organization && cloudData.organization.length > 0) ? cloudData.organization : localState.organization,
+                  visitorCount: cloudData.visitorCount !== undefined ? cloudData.visitorCount : localState.visitorCount,
+                  activities: cloudData.activities || []
+                });
+                hasSyncedFromCloud = true;
+                console.log('[DataStore] Fallback REST sync completed successfully.');
+              }
             }
+          } catch (err) {
+            console.error('[DataStore] Fallback REST sync failed:', err);
+          }
+        };
+
+        try {
+          console.log('[DataStore] Attempting to sync from Supabase...');
+          const { data, error } = await supabase.from('class_data').select('*');
+          
+          if (error) {
+            console.warn('[DataStore] Supabase select error (tables might not exist yet):', error.message);
+            await fallbackRestSync();
+          } else if (data && data.length > 0) {
+            const stateUpdate: any = {};
+            data.forEach((row: any) => {
+              stateUpdate[row.key] = row.value;
+            });
+            
+            const defaultUsers: User[] = [
+              { id: '1', name: 'Nizam DzR', username: 'nizam.dev', password: 'nizam280212', role: 'OWNER' },
+              { id: '2', name: 'Admin', username: 'admin', password: 'adminpassword', role: 'ADMIN' },
+              { id: '3', name: 'Typani', username: 'typani', password: 'typani', role: 'ADMIN' }
+            ];
+            const userMap = new Map<string, User>();
+            defaultUsers.forEach(u => userMap.set(u.username.toLowerCase().trim(), u));
+            (stateUpdate.users || []).forEach((u: any) => {
+              if (u.username) {
+                userMap.set(u.username.toLowerCase().trim(), u);
+              }
+            });
+            stateUpdate.users = Array.from(userMap.values());
+
+            const localState = useDataStore.getState();
+            set({
+              users: stateUpdate.users,
+              achievements: stateUpdate.achievements || [],
+              documentations: stateUpdate.documentations || [],
+              schedules: (stateUpdate.schedules && stateUpdate.schedules.length > 0) ? stateUpdate.schedules : localState.schedules,
+              pickets: (stateUpdate.pickets && stateUpdate.pickets.length > 0) ? stateUpdate.pickets : localState.pickets,
+              organization: (stateUpdate.organization && stateUpdate.organization.length > 0) ? stateUpdate.organization : localState.organization,
+              visitorCount: stateUpdate.visitorCount !== undefined ? stateUpdate.visitorCount : localState.visitorCount,
+              activities: stateUpdate.activities || []
+            });
+            hasSyncedFromCloud = true;
+            console.log('[DataStore] Successfully synced from Supabase.');
           } else {
-            console.error(`[DataStore] Failed to fetch cloud data: ${res.status}`);
+            console.log('[DataStore] Supabase table is empty. Running fallback REST sync to populate...');
+            await fallbackRestSync();
+            const currentState = useDataStore.getState();
+            await pushToCloud(currentState);
           }
         } catch (err) {
-          console.error('[DataStore] Error during syncFromCloud:', err);
+          console.error('[DataStore] Error during Supabase sync:', err);
+          await fallbackRestSync();
         }
-        
-        // If we failed to get valid cloud data but reached here, we still set synced to true 
-        // to allow the user to make local modifications that can be saved
+
+        // Setup real-time postgres changes subscription
+        if (!isSubscribed) {
+          console.log('[DataStore] Initializing Supabase Realtime subscription...');
+          supabase
+            .channel('public:class_data')
+            .on(
+              'postgres_changes',
+              { event: '*', schema: 'public', table: 'class_data' },
+              (payload) => {
+                console.log('[DataStore] Real-time table change received:', payload);
+                if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+                  const { key, value } = payload.new as { key: string; value: any };
+                  if (key && value !== undefined) {
+                    set({ [key]: value } as any);
+                  }
+                }
+              }
+            )
+            .subscribe((status) => {
+              console.log('[DataStore] Supabase subscription status:', status);
+            });
+          isSubscribed = true;
+        }
+
         hasSyncedFromCloud = true;
         set({ isSyncing: false });
       },
@@ -216,7 +298,24 @@ export const useDataStore = create<DataState>()(
       },
 
       addUser: (user) => {
-        set((state) => ({ users: [...state.users, { ...user, id: Date.now().toString() }] }));
+        const id = Date.now().toString();
+        set((state) => ({ users: [...state.users, { ...user, id }] }));
+        
+        // Background register in Supabase Auth to pre-create credentials
+        const email = `${user.username.trim().toLowerCase()}@kelas9k.com`;
+        supabase.auth.signUp({
+          email,
+          password: user.password || 'defaultpassword',
+          options: {
+            data: { name: user.name, role: user.role }
+          }
+        }).then(({ error }) => {
+          if (error) console.warn('[DataStore] Background user signup warning:', error.message);
+          else console.log('[DataStore] Background user registered in Supabase Auth successfully.');
+        }).catch(err => {
+          console.warn('[DataStore] Background user signup caught error:', err);
+        });
+
         pushToCloud(useDataStore.getState());
       },
       updateUser: (id, user) => {
