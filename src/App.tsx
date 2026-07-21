@@ -88,18 +88,20 @@ export default function App() {
   const { incrementVisitorCount, syncFromCloud } = useDataStore();
 
   useEffect(() => {
-    // Sync with cloud on startup
-    syncFromCloud();
-  }, [syncFromCloud]);
-
-  useEffect(() => {
-    // Only increment visitor count once per browser session
-    const hasVisited = sessionStorage.getItem('has_visited');
-    if (!hasVisited) {
-      incrementVisitorCount();
-      sessionStorage.setItem('has_visited', 'true');
-    }
-  }, [incrementVisitorCount]);
+    const initializeApp = async () => {
+      // 1. Sync state from cloud first
+      await syncFromCloud();
+      
+      // 2. After state is fully synced and initialized, increment visitor count if first time
+      const hasVisited = sessionStorage.getItem('has_visited');
+      if (!hasVisited) {
+        incrementVisitorCount();
+        sessionStorage.setItem('has_visited', 'true');
+      }
+    };
+    
+    initializeApp();
+  }, [syncFromCloud, incrementVisitorCount]);
 
   useEffect(() => {
     let active = true;

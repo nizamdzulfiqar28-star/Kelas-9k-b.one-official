@@ -97,6 +97,10 @@ interface DataState {
 const CLOUD_BIN_URL = '/api/sync';
 
 const pushToCloud = async (state: any) => {
+  if (!hasSyncedFromCloud) {
+    console.warn('[DataStore] Skipping push to cloud because initial cloud sync has not completed.');
+    return;
+  }
   try {
     const payload = {
       users: state.users,
@@ -114,7 +118,6 @@ const pushToCloud = async (state: any) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    hasSyncedFromCloud = true;
   } catch (err) {
     console.error('Error syncing to cloud:', err);
   }
@@ -146,86 +149,56 @@ export const useDataStore = create<DataState>()(
           const res = await fetch(`${CLOUD_BIN_URL}?t=${Date.now()}`);
           if (res.ok) {
             const cloudData = await res.json();
-            if (cloudData) {
+            
+            // Check if cloudData is valid and not a fallback/empty state
+            if (cloudData && !cloudData._fallback) {
               const localState = useDataStore.getState();
               
-              // 1. Merge users (ensure custom local users like typani and seed users are kept)
-              const localUsers = localState.users || [];
+              // 1. Resolve users (ensure default seed users are always included)
               const cloudUsers = cloudData.users || [];
+              const defaultUsers: User[] = [
+                { id: '1', name: 'Nizam DzR', username: 'nizam.dev', password: 'nizam280212', role: 'OWNER' },
+                { id: '2', name: 'Admin', username: 'admin', password: 'adminpassword', role: 'ADMIN' },
+                { id: '3', name: 'Typani', username: 'typani', password: 'typani', role: 'ADMIN' }
+              ];
               const userMap = new Map<string, User>();
-              
-              localUsers.forEach(u => {
-                if (u.username) userMap.set(u.username.toLowerCase().trim(), u);
+              defaultUsers.forEach(u => userMap.set(u.username.toLowerCase().trim(), u));
+              cloudUsers.forEach((u: any) => {
+                if (u.username) {
+                  userMap.set(u.username.toLowerCase().trim(), u);
+                }
               });
-              cloudUsers.forEach(u => {
-                if (u.username) userMap.set(u.username.toLowerCase().trim(), u);
-              });
-              const mergedUsers = Array.from(userMap.values());
+              const resolvedUsers = Array.from(userMap.values());
               
-              // 2. Merge achievements
-              const localAch = localState.achievements || [];
-              const cloudAch = cloudData.achievements || [];
-              const achMap = new Map<string, Achievement>();
-              localAch.forEach(a => { if (a.id) achMap.set(a.id, a); });
-              cloudAch.forEach(a => { if (a.id) achMap.set(a.id, a); });
-              const mergedAch = Array.from(achMap.values());
-              
-              // 3. Merge documentations
-              const localDocs = localState.documentations || [];
-              const cloudDocs = cloudData.documentations || [];
-              const docsMap = new Map<string, Documentation>();
-              localDocs.forEach(d => { if (d.id) docsMap.set(d.id, d); });
-              cloudDocs.forEach(d => { if (d.id) docsMap.set(d.id, d); });
-              const mergedDocs = Array.from(docsMap.values());
-              
-              // 4. Merge schedules, pickets, organization
-              const mergedSchedules = (cloudData.schedules && cloudData.schedules.length > 0) 
-                ? cloudData.schedules 
-                : localState.schedules;
-                
-              const mergedPickets = (cloudData.pickets && cloudData.pickets.length > 0) 
-                ? cloudData.pickets 
-                : localState.pickets;
-                
-              const mergedOrganization = (cloudData.organization && cloudData.organization.length > 0) 
-                ? cloudData.organization 
-                : localState.organization;
-                
-              const mergedVisitorCount = Math.max(cloudData.visitorCount || 0, localState.visitorCount || 0);
-              
-              // 5. Merge activities
-              const localAct = localState.activities || [];
-              const cloudAct = cloudData.activities || [];
-              const actMap = new Map<string, Activity>();
-              localAct.forEach(a => { if (a.id) actMap.set(a.id, a); });
-              cloudAct.forEach(a => { if (a.id) actMap.set(a.id, a); });
-              const mergedAct = Array.from(actMap.values())
-                .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-                .slice(0, 50);
-
+              // 2. Direct overwrite for items (no split-brain merging of deleted items)
               set({
-                users: mergedUsers,
-                achievements: mergedAch,
-                documentations: mergedDocs,
-                schedules: mergedSchedules,
-                pickets: mergedPickets,
-                organization: mergedOrganization,
-                visitorCount: mergedVisitorCount,
-                activities: mergedAct,
+                users: resolvedUsers,
+                achievements: cloudData.achievements || [],
+                documentations: cloudData.documentations || [],
+                schedules: (cloudData.schedules && cloudData.schedules.length > 0) ? cloudData.schedules : localState.schedules,
+                pickets: (cloudData.pickets && cloudData.pickets.length > 0) ? cloudData.pickets : localState.pickets,
+                organization: (cloudData.organization && cloudData.organization.length > 0) ? cloudData.organization : localState.organization,
+                visitorCount: cloudData.visitorCount !== undefined ? cloudData.visitorCount : localState.visitorCount,
+                activities: cloudData.activities || [],
                 isSyncing: false
               });
               
               hasSyncedFromCloud = true;
-              
-              // Push merged state back to cloud so it's fully synchronized across all devices
-              const updatedState = useDataStore.getState();
-              await pushToCloud(updatedState);
+              console.log('[DataStore] Successfully synced from cloud and initialized local state.');
               return;
+            } else {
+              console.warn('[DataStore] Cloud returned a fallback or empty state, keeping local values.');
             }
+          } else {
+            console.error(`[DataStore] Failed to fetch cloud data: ${res.status}`);
           }
         } catch (err) {
-          console.error('Error syncing from cloud:', err);
+          console.error('[DataStore] Error during syncFromCloud:', err);
         }
+        
+        // If we failed to get valid cloud data but reached here, we still set synced to true 
+        // to allow the user to make local modifications that can be saved
+        hasSyncedFromCloud = true;
         set({ isSyncing: false });
       },
       syncToCloud: async () => {
@@ -457,6 +430,20 @@ export const useDataStore = create<DataState>()(
       merge: (persistedState: any, currentState) => {
         const merged = { ...currentState, ...(persistedState as any) };
         
+        // Ensure default hardcoded/seeded users are always merged with persisted users (by username)
+        const userMap = new Map<string, User>();
+        if (currentState.users) {
+          currentState.users.forEach(u => {
+            if (u.username) userMap.set(u.username.toLowerCase().trim(), u);
+          });
+        }
+        if (persistedState && persistedState.users) {
+          persistedState.users.forEach((u: any) => {
+            if (u.username) userMap.set(u.username.toLowerCase().trim(), u);
+          });
+        }
+        merged.users = Array.from(userMap.values());
+        
         // Ensure critical fields are never undefined or completely empty if defaults exist
         if (!merged.schedules || merged.schedules.length === 0) {
           merged.schedules = currentState.schedules;
@@ -466,9 +453,6 @@ export const useDataStore = create<DataState>()(
         }
         if (!merged.organization || merged.organization.length === 0) {
           merged.organization = currentState.organization;
-        }
-        if (!merged.users || merged.users.length === 0) {
-          merged.users = currentState.users;
         }
         if (!merged.documentations) {
           merged.documentations = currentState.documentations;
