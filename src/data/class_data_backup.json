@@ -1,0 +1,226 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "name": "Nizam DzR",
+      "username": "nizam.dev",
+      "password": "nizam280212",
+      "role": "OWNER"
+    },
+    {
+      "id": "2",
+      "name": "Admin",
+      "username": "admin",
+      "password": "adminpassword",
+      "role": "ADMIN"
+    },
+    {
+      "id": "3",
+      "name": "Typani",
+      "username": "typani",
+      "password": "typani",
+      "role": "ADMIN"
+    }
+  ],
+  "achievements": [],
+  "documentations": [
+    {
+      "id": "1",
+      "title": "Study Tour Bali",
+      "type": "photo",
+      "url": "https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=800&auto=format&fit=crop",
+      "date": "12 Mei 2025",
+      "location": "Tanah Lot, Bali",
+      "category": "Study Tour"
+    }
+  ],
+  "schedules": [
+    {
+      "day": "Senin",
+      "subjects": [
+        "Upacara",
+        "Matematika",
+        "Matematika",
+        "IPA",
+        "Istirahat",
+        "IPS",
+        "IPS",
+        "Bahasa Indonesia"
+      ]
+    },
+    {
+      "day": "Selasa",
+      "subjects": [
+        "Bahasa Inggris",
+        "Bahasa Inggris",
+        "PKN",
+        "PKN",
+        "Istirahat",
+        "Olahraga",
+        "Olahraga",
+        "Seni Budaya"
+      ]
+    },
+    {
+      "day": "Rabu",
+      "subjects": [
+        "IPA",
+        "IPA",
+        "Bahasa Indonesia",
+        "Bahasa Indonesia",
+        "Istirahat",
+        "Matematika",
+        "Matematika",
+        "Agama"
+      ]
+    },
+    {
+      "day": "Kamis",
+      "subjects": [
+        "IPS",
+        "IPS",
+        "Prakarya",
+        "Prakarya",
+        "Istirahat",
+        "Bahasa Inggris",
+        "Bahasa Inggris",
+        "Muatan Lokal"
+      ]
+    },
+    {
+      "day": "Jumat",
+      "subjects": [
+        "Senam Pagi",
+        "Agama",
+        "Agama",
+        "Istirahat",
+        "BK",
+        "Pramuka"
+      ]
+    }
+  ],
+  "pickets": [
+    {
+      "day": "Senin",
+      "students": []
+    },
+    {
+      "day": "Selasa",
+      "students": []
+    },
+    {
+      "day": "Rabu",
+      "students": []
+    },
+    {
+      "day": "Kamis",
+      "students": []
+    },
+    {
+      "day": "Jumat",
+      "students": []
+    }
+  ],
+  "organization": [
+    {
+      "id": "1",
+      "role": "Ketua Murid",
+      "name": "Ahmad Faisal",
+      "url": ""
+    },
+    {
+      "id": "2",
+      "role": "Wakil Ketua Murid",
+      "name": "Bunga Lestari",
+      "url": ""
+    },
+    {
+      "id": "3",
+      "role": "Sekretaris",
+      "name": "Dina Karmila",
+      "url": ""
+    },
+    {
+      "id": "4",
+      "role": "Wakil Sekretaris",
+      "name": "Sintia",
+      "url": ""
+    },
+    {
+      "id": "5",
+      "role": "Bendahara",
+      "name": "Eko Prasetyo",
+      "url": ""
+    },
+    {
+      "id": "6",
+      "role": "Wakil Bendahara",
+      "name": "Aqilah",
+      "url": ""
+    },
+    {
+      "id": "7",
+      "role": "Keamanan 1",
+      "name": "",
+      "url": ""
+    },
+    {
+      "id": "8",
+      "role": "Keamanan 2",
+      "name": "",
+      "url": ""
+    },
+    {
+      "id": "9",
+      "role": "Kebersihan 1",
+      "name": "",
+      "url": ""
+    },
+    {
+      "id": "10",
+      "role": "Kebersihan 2",
+      "name": "",
+      "url": ""
+    },
+    {
+      "id": "11",
+      "role": "Peralatan 1",
+      "name": "",
+      "url": ""
+    },
+    {
+      "id": "12",
+      "role": "Peralatan 2",
+      "name": "",
+      "url": ""
+    },
+    {
+      "id": "13",
+      "role": "Kerohanian 1",
+      "name": "",
+      "url": ""
+    },
+    {
+      "id": "14",
+      "role": "Kerohanian 2",
+      "name": "",
+      "url": ""
+    }
+  ],
+  "visitorCount": 153,
+  "activities": [
+    {
+      "id": "act-1",
+      "user": "Nizam DzR",
+      "action": "mengupdate Website Kelas B.ONE",
+      "timestamp": "2026-07-20T07:40:42.234Z"
+    },
+    {
+      "id": "act-2",
+      "user": "Admin",
+      "action": "menambahkan Dokumentasi \"Study Tour Bali\"",
+      "timestamp": "2026-07-20T04:40:42.235Z"
+    }
+  ],
+  "lastUpdated": "2026-07-21T10:58:30.180Z"
+}

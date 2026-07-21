@@ -25,9 +25,15 @@ async function startServer() {
 
   // API Routes
   app.get('/api/sync', async (req, res) => {
+    // Disable HTTP caching for this route
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    
     try {
       console.log('Fetching state from extendsclass...');
-      const response = await fetch(CLOUD_BIN_URL);
+      // Cache-busting query parameter to bypass extendsclass's 2-hour cache
+      const response = await fetch(`${CLOUD_BIN_URL}?nocache=${Date.now()}`);
       if (response.ok) {
         const cloudData = await response.json();
         if (cloudData) {

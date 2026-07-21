@@ -125,7 +125,8 @@ export const useDataStore = create<DataState>()(
     (set) => ({
       users: [
         { id: '1', name: 'Nizam DzR', username: 'nizam.dev', password: 'nizam280212', role: 'OWNER' },
-        { id: '2', name: 'Admin', username: 'admin', password: 'adminpassword', role: 'ADMIN' }
+        { id: '2', name: 'Admin', username: 'admin', password: 'adminpassword', role: 'ADMIN' },
+        { id: '3', name: 'Typani', username: 'typani', password: 'typani', role: 'ADMIN' }
       ],
       achievements: achievements,
       documentations: documentation,
@@ -142,27 +143,84 @@ export const useDataStore = create<DataState>()(
       syncFromCloud: async () => {
         set({ isSyncing: true });
         try {
-          const res = await fetch(CLOUD_BIN_URL);
+          const res = await fetch(`${CLOUD_BIN_URL}?t=${Date.now()}`);
           if (res.ok) {
             const cloudData = await res.json();
-            if (cloudData && cloudData.users && cloudData.users.length > 0) {
+            if (cloudData) {
+              const localState = useDataStore.getState();
+              
+              // 1. Merge users (ensure custom local users like typani and seed users are kept)
+              const localUsers = localState.users || [];
+              const cloudUsers = cloudData.users || [];
+              const userMap = new Map<string, User>();
+              
+              localUsers.forEach(u => {
+                if (u.username) userMap.set(u.username.toLowerCase().trim(), u);
+              });
+              cloudUsers.forEach(u => {
+                if (u.username) userMap.set(u.username.toLowerCase().trim(), u);
+              });
+              const mergedUsers = Array.from(userMap.values());
+              
+              // 2. Merge achievements
+              const localAch = localState.achievements || [];
+              const cloudAch = cloudData.achievements || [];
+              const achMap = new Map<string, Achievement>();
+              localAch.forEach(a => { if (a.id) achMap.set(a.id, a); });
+              cloudAch.forEach(a => { if (a.id) achMap.set(a.id, a); });
+              const mergedAch = Array.from(achMap.values());
+              
+              // 3. Merge documentations
+              const localDocs = localState.documentations || [];
+              const cloudDocs = cloudData.documentations || [];
+              const docsMap = new Map<string, Documentation>();
+              localDocs.forEach(d => { if (d.id) docsMap.set(d.id, d); });
+              cloudDocs.forEach(d => { if (d.id) docsMap.set(d.id, d); });
+              const mergedDocs = Array.from(docsMap.values());
+              
+              // 4. Merge schedules, pickets, organization
+              const mergedSchedules = (cloudData.schedules && cloudData.schedules.length > 0) 
+                ? cloudData.schedules 
+                : localState.schedules;
+                
+              const mergedPickets = (cloudData.pickets && cloudData.pickets.length > 0) 
+                ? cloudData.pickets 
+                : localState.pickets;
+                
+              const mergedOrganization = (cloudData.organization && cloudData.organization.length > 0) 
+                ? cloudData.organization 
+                : localState.organization;
+                
+              const mergedVisitorCount = Math.max(cloudData.visitorCount || 0, localState.visitorCount || 0);
+              
+              // 5. Merge activities
+              const localAct = localState.activities || [];
+              const cloudAct = cloudData.activities || [];
+              const actMap = new Map<string, Activity>();
+              localAct.forEach(a => { if (a.id) actMap.set(a.id, a); });
+              cloudAct.forEach(a => { if (a.id) actMap.set(a.id, a); });
+              const mergedAct = Array.from(actMap.values())
+                .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                .slice(0, 50);
+
               set({
-                users: cloudData.users,
-                achievements: cloudData.achievements || [],
-                documentations: cloudData.documentations || [],
-                schedules: cloudData.schedules || [],
-                pickets: cloudData.pickets || [],
-                organization: cloudData.organization || [],
-                visitorCount: cloudData.visitorCount || 142,
-                activities: cloudData.activities || [],
+                users: mergedUsers,
+                achievements: mergedAch,
+                documentations: mergedDocs,
+                schedules: mergedSchedules,
+                pickets: mergedPickets,
+                organization: mergedOrganization,
+                visitorCount: mergedVisitorCount,
+                activities: mergedAct,
                 isSyncing: false
               });
+              
               hasSyncedFromCloud = true;
+              
+              // Push merged state back to cloud so it's fully synchronized across all devices
+              const updatedState = useDataStore.getState();
+              await pushToCloud(updatedState);
               return;
-            } else {
-              const currentState = useDataStore.getState();
-              await pushToCloud(currentState);
-              hasSyncedFromCloud = true;
             }
           }
         } catch (err) {
