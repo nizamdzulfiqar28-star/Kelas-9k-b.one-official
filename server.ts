@@ -60,28 +60,34 @@ async function startServer() {
 
   app.put('/api/sync', async (req, res) => {
     try {
-      console.log('Saving state to extendsclass...');
+      console.log('Saving state to local backup...');
       const payload = req.body;
       
       // Save locally first so we always have a local copy immediately
       await ensureDirectoryExists(BACKUP_FILE_PATH);
       await fs.writeFile(BACKUP_FILE_PATH, JSON.stringify(payload, null, 2), 'utf-8');
       
-      const response = await fetch(CLOUD_BIN_URL, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Cloud returned status ${response.status} on PUT`);
+      try {
+        const response = await fetch(CLOUD_BIN_URL, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        if (!response.ok) {
+          console.warn(`[Server] Cloud PUT returned status ${response.status}. State safely persisted in local backup.`);
+          return res.json({ success: true, warning: `Saved to local backup (Cloud status ${response.status})` });
+        }
+        
+        console.log('Successfully synced state to cloud.');
+        return res.json({ success: true });
+      } catch (cloudErr: any) {
+        console.warn('[Server] Cloud sync notice:', cloudErr.message || cloudErr);
+        return res.json({ success: true, warning: 'Saved to local backup' });
       }
-      
-      console.log('Successfully synced state to cloud.');
-      return res.json({ success: true });
     } catch (err: any) {
-      console.error('Failed to sync to cloud, but state was saved to local backup:', err);
-      return res.json({ success: true, warning: 'Saved to local backup, cloud sync failed' });
+      console.error('[Server] Failed to write local backup:', err);
+      return res.status(500).json({ error: 'Failed to write local backup' });
     }
   });
 

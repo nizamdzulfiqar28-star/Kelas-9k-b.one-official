@@ -78,10 +78,18 @@ export default function HomePage() {
             <motion.div 
               whileHover={{ scale: 1.05, rotate: 2 }}
               transition={{ type: "spring", bounce: 0.5 }}
-              className="w-48 h-48 md:w-64 md:h-64 shrink-0 rounded-full border-4 border-[#d4af37]/30 shadow-2xl bg-gradient-to-br from-slate-900 to-slate-950 flex flex-col items-center justify-center p-6 text-center"
+              className="w-48 h-48 md:w-64 md:h-64 shrink-0 rounded-full border-4 border-[#d4af37]/30 shadow-2xl bg-slate-900 overflow-hidden relative"
             >
-              <Users className="w-10 h-10 md:w-16 md:h-16 text-[#d4af37]/60 mb-2 md:mb-3" />
-              <span className="text-slate-300 font-serif italic text-base md:text-lg tracking-wider font-medium">Foto Guru</span>
+              <img 
+                src="https://www.image2url.com/r2/default/images/1784723215884-029653a0-f180-4a4c-86a1-01291e1348ce.jpg" 
+                alt="Foto Ibu Hj. Iis Risnawati S.Pd"
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  // Fallback ke local image atau placeholder jika URL gagal
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = "/foto-wali-kelas.jpg";
+                }}
+              />
             </motion.div>
             <div className="text-center md:text-left flex-1 space-y-6">
               <div>

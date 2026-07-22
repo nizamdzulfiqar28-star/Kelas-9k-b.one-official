@@ -49,7 +49,7 @@ export default function Footer() {
               </a>
 
               {/* TikTok */}
-              <a href="https://www.tiktok.com/@ix_k34?_r=1&_t=ZS-98F7AXfbdo8" target="_blank" rel="noopener noreferrer" className="block group">
+              <a href="https://tiktok.com/@viii_k34" target="_blank" rel="noopener noreferrer" className="block group">
                 <div className="relative overflow-hidden bg-[#13131A] border border-white/5 rounded-3xl p-4 flex items-center justify-between transition-colors hover:bg-white/[0.03]">
                   <div className="absolute top-0 right-0 bottom-0 w-48 bg-cyan-500/10 blur-[40px] rounded-full translate-x-1/2" />
                   
@@ -59,7 +59,7 @@ export default function Footer() {
                     </div>
                     <div>
                       <p className="text-[10px] tracking-[0.2em] text-slate-500 uppercase mb-1">TikTok</p>
-                      <p className="text-slate-200 font-medium tracking-wide">@ix_k34</p>
+                      <p className="text-slate-200 font-medium tracking-wide">@viii_k34</p>
                     </div>
                   </div>
                   

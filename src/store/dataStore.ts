@@ -121,7 +121,7 @@ const pushToCloud = async (state: any) => {
       body: JSON.stringify(payload)
     });
   } catch (err) {
-    console.error('[DataStore] Error syncing to backup REST endpoint:', err);
+    console.warn('[DataStore] Backup REST sync notice:', err);
   }
 
   try {
