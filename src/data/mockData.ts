@@ -32,7 +32,7 @@ export const students = [
   { id: '31', absen: '31', name: 'Sri ayu', gender: 'P' },
   { id: '32', absen: '32', name: 'Tabish', gender: 'L' },
   { id: '33', absen: '33', name: 'Typani', gender: 'P' },
-  { id: '34', absen: '34', name: 'Wafa', gender: 'L' }
+  { id: '34', absen: '34', name: 'Wafa', gender: 'P' }
 ];
 
 export const documentation = [
